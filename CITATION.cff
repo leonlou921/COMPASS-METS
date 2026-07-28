@@ -5,7 +5,7 @@ type: software
 version: "1.0.0"
 date-released: "2026-07-28"
 license: Apache-2.0
-repository-code: "https://github.com/leonlou921/brats-mets-2026-n03"
+repository-code: "https://github.com/leonlou921/brats-mets-MicroBT"
 authors:
   - alias: "leonlou921"
 keywords:
