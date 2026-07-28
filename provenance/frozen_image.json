@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "candidate": "N03_XF12_LCv3_ET_parent_supported",
+  "built_at": "2026-07-27",
+  "platform": "linux/amd64",
+  "archive_filename": "brats-met-n03-final-20260727.docker.tar",
+  "archive_size_bytes": 9499263488,
+  "archive_sha256": "629c23b4d11f6e5b536dd17e99ce5194ea8f88bf991f69ba59c53bf172781c42",
+  "image_digest": "sha256:ef2006b9d8746ce86b941e1b1a7c456c73aaf5c92e2f4c32f512491bf214053b",
+  "base_image": "pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime",
+  "base_image_digest": "sha256:ac7c098a81512e719afa5d2d497f812d7db3498f340a4b819c69cb7b3b257126",
+  "checkpoint_count": 15,
+  "learned_model_count": 2,
+  "archive_distribution": "not_in_git_private_weights"
+}

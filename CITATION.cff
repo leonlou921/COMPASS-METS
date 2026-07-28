@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this pipeline, please cite this software repository."
+title: "BraTS-METS 2026 N03 inference and training pipeline"
+type: software
+version: "1.0.0"
+date-released: "2026-07-28"
+license: Apache-2.0
+repository-code: "https://github.com/leonlou921/brats-mets-2026-n03"
+authors:
+  - alias: "leonlou921"
+keywords:
+  - BraTS
+  - brain metastasis
+  - medical image segmentation
+  - nnU-Net

@@ -1,0 +1,38 @@
+# Private challenge data and model artifacts
+data/
+assets/
+nnUNet_raw/
+nnUNet_preprocessed/
+nnUNet_results/
+*.nii
+*.nii.gz
+*.npz
+*.npy
+*.pth
+*.pt
+*.joblib
+*.docker.tar
+*.tar
+*.zip
+
+# Generated outputs
+output/
+outputs/
+predictions/
+submissions/
+work/
+logs/
+release_audit.json
+
+# Python/editor state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store

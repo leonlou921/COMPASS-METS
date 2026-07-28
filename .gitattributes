@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.nii.gz binary
+*.npz binary
+*.npy binary
+*.pth binary
+*.pt binary
+*.joblib binary
+*.tar binary

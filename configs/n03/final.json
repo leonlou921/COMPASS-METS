@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "candidate_id": "N03_XF12_LCv3_ET_parent_supported",
+  "anchor_id": "XF12_XLM_structured_probability_V2_strict",
+  "proposal_threshold": 0.25,
+  "et_component_cutoff": 0.5497123599,
+  "all_lcv2_cutoffs": {
+    "ET": 0.5497123599,
+    "RC": 0.0877561048,
+    "TC": 0.3819091916,
+    "WT": 0.3819091916
+  },
+  "minimum_parent_model_support": 2,
+  "parent_models": ["XL", "M", "FT"],
+  "required_parent_regions": ["ET", "TC", "WT"],
+  "policy": "add_only_et_parent_supported",
+  "preserve_anchor": true,
+  "rerun_anchor_postprocess_after_addition": false,
+  "output_labels": [0, 1, 2, 3, 4]
+}
