@@ -8,7 +8,25 @@ from typing import Any, Mapping
 
 
 MODEL_ROLES = frozenset({"XL", "M", "FT"})
-LEARNED_MODEL_ROLES = frozenset({"lcv1_case", "lcv2_component"})
+LEARNED_MODEL_RELATIVE_PATHS = {
+    "lcv1_case": Path("models/lightgbm/final/models.joblib"),
+    "lcv2_component": Path("models/lightgbm/final/models.joblib"),
+    "rgv3_et": Path("models/ET/final/models.joblib"),
+    "utility_v4_existence": Path(
+        "models/existence_target/final/model.joblib"
+    ),
+    "utility_v4_geometry": Path(
+        "models/geometry_safe_target/final/model.joblib"
+    ),
+    "utility_v4_feature_names": Path("feature_names.json"),
+}
+LEARNED_MODEL_ROLES = frozenset(LEARNED_MODEL_RELATIVE_PATHS)
+EXPECTED_FINAL_LEARNED_HASHES = {
+    "rgv3_et": "5fff6d9c7ef31bf4ce33bad211abe017fa1e0235d4e7f78d264c50c2c2a9fac1",
+    "utility_v4_existence": "8a8c8f02ed652861b949b9a47aedaa8faff8e9904e4d9645f48a1a743ec0e3e0",
+    "utility_v4_geometry": "bfd2d2be7e9349d4cde41f1e4682f87b9f0108216d69597cb80d0a6c9991f87e",
+    "utility_v4_feature_names": "87b6523508688f52ad1cee6d600d7d353991f0d1451ec29ce0aed500ee07699d",
+}
 EXPECTED_FOLDS = tuple(range(5))
 FORBIDDEN_ASSET_MARKERS = (
     "/labelstr/",
@@ -46,6 +64,8 @@ def build_source_inventory(
     model_roots: Mapping[str, Path],
     learned_model_roots: Mapping[str, Path],
     source_root: Path,
+    *,
+    enforce_frozen_hashes: bool = True,
 ) -> dict[str, Any]:
     roles = set(model_roots)
     if roles != MODEL_ROLES:
@@ -90,13 +110,9 @@ def build_source_inventory(
         )
     learned_models = {}
     for role in sorted(LEARNED_MODEL_ROLES):
-        final_model = (
-            Path(learned_model_roots[role])
-            / "models"
-            / "lightgbm"
-            / "final"
-            / "models.joblib"
-        )
+        final_model = Path(learned_model_roots[role]) / LEARNED_MODEL_RELATIVE_PATHS[
+            role
+        ]
         learned_models[role] = _file_record(final_model, f"{role}_final")
     source_assets = []
     for path in sorted(Path(source_root).rglob("*")):
@@ -105,18 +121,22 @@ def build_source_inventory(
         source_assets.append(_file_record(path, "source_code"))
 
     inventory = {
-        "schema_version": 1,
-        "candidate": "N03_XF12_LCv3_ET_parent_supported",
+        "schema_version": 2,
+        "candidate": "N03_FINAL_UTILITY_V4",
         "models": models,
         "learned_models": learned_models,
         "assets": source_assets,
+        "frozen_asset_hashes_verified": bool(enforce_frozen_hashes),
     }
-    validate_source_inventory(inventory)
+    validate_source_inventory(
+        inventory,
+        require_frozen_hashes=enforce_frozen_hashes,
+    )
     return inventory
 
 
 def _asset_rows(inventory: Mapping[str, Any]):
-    for role in sorted(MODEL_ROLES):
+    for role in sorted(inventory.get("models", {})):
         model = inventory["models"][role]
         yield from model["metadata"]
         yield from model["checkpoints"]
@@ -128,13 +148,17 @@ def validate_source_inventory(
     inventory: Mapping[str, Any],
     *,
     verify_files: bool = False,
+    require_model_assets: bool = True,
+    require_frozen_hashes: bool = False,
 ) -> None:
-    if inventory.get("candidate") != "N03_XF12_LCv3_ET_parent_supported":
-        raise ValueError("inventory candidate is not frozen N03")
-    if set(inventory.get("models", {})) != MODEL_ROLES:
+    if inventory.get("candidate") != "N03_FINAL_UTILITY_V4":
+        raise ValueError("inventory candidate is not N03_FINAL_UTILITY_V4")
+    if require_model_assets and set(inventory.get("models", {})) != MODEL_ROLES:
         raise ValueError("inventory must contain exactly XL, M, and FT")
 
-    for role in sorted(MODEL_ROLES):
+    for role in sorted(inventory.get("models", {})):
+        if role not in MODEL_ROLES:
+            raise ValueError(f"unexpected model role: {role}")
         model = inventory["models"][role]
         checkpoints = model.get("checkpoints", [])
         if [row.get("fold") for row in checkpoints] != list(EXPECTED_FOLDS):
@@ -146,8 +170,18 @@ def validate_source_inventory(
 
     if set(inventory.get("learned_models", {})) != LEARNED_MODEL_ROLES:
         raise ValueError(
-            "inventory must contain exactly the LCv1 case and LCv2 component bundles"
+            "inventory must contain the LCv1, LCv2, RGv3-ET, and utility-v4 assets"
         )
+    if require_frozen_hashes:
+        if inventory.get("frozen_asset_hashes_verified") is not True:
+            raise ValueError("inventory does not assert frozen asset hashes")
+        for role, expected in EXPECTED_FINAL_LEARNED_HASHES.items():
+            actual = inventory["learned_models"][role].get("sha256")
+            if actual != expected:
+                raise ValueError(
+                    f"{role} sha256 differs from frozen value: "
+                    f"{actual} != {expected}"
+                )
 
     for row in _asset_rows(inventory):
         text = f"{row.get('role', '')} {row.get('path', '')}".replace("\\", "/").lower()

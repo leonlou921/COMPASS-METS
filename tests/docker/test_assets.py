@@ -128,8 +128,15 @@ def test_prepare_asset_bundle_preserves_nnunet_layout_and_two_learned_models(
         }
 
     learned_models = {}
-    for role in ("lcv1_case", "lcv2_component"):
-        path = source_root / role / "models.joblib"
+    for role, name in (
+        ("lcv1_case", "models.joblib"),
+        ("lcv2_component", "models.joblib"),
+        ("rgv3_et", "models.joblib"),
+        ("utility_v4_existence", "model.joblib"),
+        ("utility_v4_geometry", "model.joblib"),
+        ("utility_v4_feature_names", "feature_names.json"),
+    ):
+        path = source_root / role / name
         path.parent.mkdir()
         path.write_bytes(role.encode("ascii"))
         learned_models[role] = {
@@ -140,13 +147,17 @@ def test_prepare_asset_bundle_preserves_nnunet_layout_and_two_learned_models(
         }
 
     inventory = {
-        "candidate": "N03_XF12_LCv3_ET_parent_supported",
+        "candidate": "N03_FINAL_UTILITY_V4",
         "models": models,
         "learned_models": learned_models,
         "assets": [],
     }
     destination = tmp_path / "bundle"
-    report = prepare_asset_bundle(inventory, destination)
+    report = prepare_asset_bundle(
+        inventory,
+        destination,
+        require_frozen_hashes=False,
+    )
 
     dataset_root = destination / "nnUNet_results" / "Dataset501_BraTS2025MET"
     assert {
@@ -163,7 +174,17 @@ def test_prepare_asset_bundle_preserves_nnunet_layout_and_two_learned_models(
                 weights_only=False,
             )
             assert set(checkpoint) == set(REQUIRED_INFERENCE_CHECKPOINT_KEYS)
-    for role in learned_models:
-        assert (destination / "learned_models" / role / "models.joblib").is_file()
+    assert (destination / "learned_models/lcv1_case/models.joblib").is_file()
+    assert (destination / "learned_models/lcv2_component/models.joblib").is_file()
+    assert (destination / "learned_models/rgv3_et/models.joblib").is_file()
+    assert (
+        destination / "learned_models/utility_v4/existence_model.joblib"
+    ).is_file()
+    assert (
+        destination / "learned_models/utility_v4/geometry_model.joblib"
+    ).is_file()
+    assert (
+        destination / "learned_models/utility_v4/feature_names.json"
+    ).is_file()
     assert report["checkpoint_count"] == 15
-    assert report["learned_model_count"] == 2
+    assert report["learned_model_count"] == 6

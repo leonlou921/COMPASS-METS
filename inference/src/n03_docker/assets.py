@@ -20,6 +20,20 @@ REQUIRED_INFERENCE_CHECKPOINT_KEYS = (
     "init_args",
     "inference_allowed_mirroring_axes",
 )
+LEARNED_ASSET_DESTINATIONS = {
+    "lcv1_case": Path("learned_models/lcv1_case/models.joblib"),
+    "lcv2_component": Path("learned_models/lcv2_component/models.joblib"),
+    "rgv3_et": Path("learned_models/rgv3_et/models.joblib"),
+    "utility_v4_existence": Path(
+        "learned_models/utility_v4/existence_model.joblib"
+    ),
+    "utility_v4_geometry": Path(
+        "learned_models/utility_v4/geometry_model.joblib"
+    ),
+    "utility_v4_feature_names": Path(
+        "learned_models/utility_v4/feature_names.json"
+    ),
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -118,9 +132,15 @@ def _copy_verified(source: Path, destination: Path, expected_sha256: str) -> dic
 def prepare_asset_bundle(
     inventory: Mapping[str, Any],
     destination: Path,
+    *,
+    require_frozen_hashes: bool = True,
 ) -> dict[str, Any]:
     """Create the inference-only nnU-Net and learned-model asset tree."""
-    validate_source_inventory(inventory, verify_files=True)
+    validate_source_inventory(
+        inventory,
+        verify_files=True,
+        require_frozen_hashes=require_frozen_hashes,
+    )
     destination = Path(destination).resolve()
     if destination.exists():
         raise FileExistsError(f"asset destination already exists: {destination}")
@@ -157,12 +177,12 @@ def prepare_asset_bundle(
                 )
 
         learned_reports = []
-        for role in ("lcv1_case", "lcv2_component"):
+        for role, relative_destination in LEARNED_ASSET_DESTINATIONS.items():
             row = inventory["learned_models"][role]
             learned_reports.append(
                 _copy_verified(
                     Path(row["path"]),
-                    temporary / "learned_models" / role / "models.joblib",
+                    temporary / relative_destination,
                     row["sha256"],
                 )
             )

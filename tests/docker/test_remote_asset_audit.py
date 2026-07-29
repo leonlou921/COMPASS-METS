@@ -11,6 +11,7 @@ SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from n03_docker.asset_inventory import (  # noqa: E402
+    LEARNED_MODEL_RELATIVE_PATHS,
     MODEL_ROLES,
     build_source_inventory,
     validate_source_inventory,
@@ -53,6 +54,28 @@ def _complete_fixture(
         final.mkdir(parents=True)
         (final / "models.joblib").write_bytes(payload)
         learned_model_roots[role] = root
+    rgv3 = tmp_path / "rgv3"
+    rgv3_final = rgv3 / "models" / "ET" / "final"
+    rgv3_final.mkdir(parents=True)
+    (rgv3_final / "models.joblib").write_bytes(b"frozen-rgv3-et")
+    learned_model_roots["rgv3_et"] = rgv3
+    utility = tmp_path / "utility-v4"
+    existence = utility / "models" / "existence_target" / "final"
+    geometry = utility / "models" / "geometry_safe_target" / "final"
+    existence.mkdir(parents=True)
+    geometry.mkdir(parents=True)
+    (existence / "model.joblib").write_bytes(b"frozen-existence")
+    (geometry / "model.joblib").write_bytes(b"frozen-geometry")
+    (utility / "feature_names.json").write_text(
+        '["v2_component_probability", "v3_component_probability"]',
+        encoding="utf-8",
+    )
+    for role in (
+        "utility_v4_existence",
+        "utility_v4_geometry",
+        "utility_v4_feature_names",
+    ):
+        learned_model_roots[role] = utility
     source = tmp_path / "source"
     source.mkdir()
     (source / "pipeline.py").write_text("N03 = True\n", encoding="utf-8")
@@ -61,13 +84,22 @@ def _complete_fixture(
 
 def test_inventory_requires_three_roles_and_five_best_folds(tmp_path: Path) -> None:
     model_roots, learned_model_roots, source_root = _complete_fixture(tmp_path)
-    inventory = build_source_inventory(model_roots, learned_model_roots, source_root)
+    inventory = build_source_inventory(
+        model_roots,
+        learned_model_roots,
+        source_root,
+        enforce_frozen_hashes=False,
+    )
     validate_source_inventory(inventory)
 
     assert set(inventory["models"]) == MODEL_ROLES
     assert set(inventory["learned_models"]) == {
         "lcv1_case",
         "lcv2_component",
+        "rgv3_et",
+        "utility_v4_existence",
+        "utility_v4_geometry",
+        "utility_v4_feature_names",
     }
     for role in MODEL_ROLES:
         checkpoints = inventory["models"][role]["checkpoints"]
@@ -83,14 +115,24 @@ def test_inventory_rejects_missing_fold(tmp_path: Path) -> None:
     (model_roots["XL"] / "fold_4" / "checkpoint_best.pth").unlink()
 
     with pytest.raises(FileNotFoundError, match="XL.*fold_4.*checkpoint_best"):
-        build_source_inventory(model_roots, learned_model_roots, source_root)
+        build_source_inventory(
+            model_roots,
+            learned_model_roots,
+            source_root,
+            enforce_frozen_hashes=False,
+        )
 
 
 def test_inventory_rejects_forbidden_training_or_test_artifacts(
     tmp_path: Path,
 ) -> None:
     model_roots, learned_model_roots, source_root = _complete_fixture(tmp_path)
-    inventory = build_source_inventory(model_roots, learned_model_roots, source_root)
+    inventory = build_source_inventory(
+        model_roots,
+        learned_model_roots,
+        source_root,
+        enforce_frozen_hashes=False,
+    )
     inventory["assets"].append(
         {
             "role": "historical_prediction",
@@ -106,7 +148,12 @@ def test_inventory_rejects_forbidden_training_or_test_artifacts(
 
 def test_inventory_detects_size_or_hash_drift(tmp_path: Path) -> None:
     model_roots, learned_model_roots, source_root = _complete_fixture(tmp_path)
-    inventory = build_source_inventory(model_roots, learned_model_roots, source_root)
+    inventory = build_source_inventory(
+        model_roots,
+        learned_model_roots,
+        source_root,
+        enforce_frozen_hashes=False,
+    )
     row = inventory["models"]["M"]["checkpoints"][2]
     row["size_bytes"] += 1
 
@@ -114,19 +161,25 @@ def test_inventory_detects_size_or_hash_drift(tmp_path: Path) -> None:
         validate_source_inventory(inventory, verify_files=True)
 
 
-def test_inventory_contains_only_two_final_learned_bundles(tmp_path: Path) -> None:
+def test_inventory_contains_only_final_learned_bundles(tmp_path: Path) -> None:
     model_roots, learned_model_roots, source_root = _complete_fixture(tmp_path)
-    for root in learned_model_roots.values():
+    for role in ("lcv1_case", "lcv2_component"):
+        root = learned_model_roots[role]
         fold_model = root / "models" / "lightgbm" / "fold_0"
         fold_model.mkdir()
         (fold_model / "models.joblib").write_bytes(b"crossfit-not-for-inference")
 
-    inventory = build_source_inventory(model_roots, learned_model_roots, source_root)
+    inventory = build_source_inventory(
+        model_roots,
+        learned_model_roots,
+        source_root,
+        enforce_frozen_hashes=False,
+    )
 
     for role, root in learned_model_roots.items():
         row = inventory["learned_models"][role]
         assert Path(row["path"]).as_posix() == (
-            root / "models" / "lightgbm" / "final" / "models.joblib"
+            root / LEARNED_MODEL_RELATIVE_PATHS[role]
         ).as_posix()
 
 
@@ -141,4 +194,9 @@ def test_inventory_rejects_missing_lcv1_case_bundle(tmp_path: Path) -> None:
     ).unlink()
 
     with pytest.raises(FileNotFoundError, match="models.joblib"):
-        build_source_inventory(model_roots, learned_model_roots, source_root)
+        build_source_inventory(
+            model_roots,
+            learned_model_roots,
+            source_root,
+            enforce_frozen_hashes=False,
+        )
