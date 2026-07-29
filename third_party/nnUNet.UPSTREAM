@@ -1,5 +1,6 @@
 Project: nnU-Net
 Upstream: https://github.com/MIC-DKFZ/nnUNet
+Version: 2.6.2
 Commit: 86606c53ef9f556d6f024a304b52a48378453641
 Imported: 2026-07-29
 Method: clean git archive of the pinned upstream commit
@@ -10,4 +11,3 @@ Project-specific additions:
 - nnUNetTrainer_ResEncM_ComponentSmallLesionSyntheticTumorAug.py
 - nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT.py
 - nnUNetTrainer_ResEncM_SmallLesionOS.py
-

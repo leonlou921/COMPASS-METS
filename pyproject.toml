@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "brats-mets-n03"
+name = "brats-mets-microbt"
 version = "1.0.0"
-description = "Training and frozen inference pipeline for the BraTS-METS N03 candidate"
+description = "Script-driven training and inference pipeline for BraTS-METS MicroBT"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 license = {text = "Apache-2.0"}
@@ -23,11 +23,15 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=8,<9"]
 
+[tool.setuptools.packages.find]
+include = ["brats_mets*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [
   ".",
-  "inference/src",
+  "third_party/nnUNet",
+  # Temporary compatibility paths; removed when Task 6 migrates LCv1/LCv2.
   "inference/vendor/lcv1",
   "inference/vendor/portfolio",
   "inference/vendor/pipeline",
