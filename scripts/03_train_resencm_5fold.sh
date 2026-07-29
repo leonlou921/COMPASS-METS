@@ -11,7 +11,7 @@ EXTRA=()
 [[ "${DRY_RUN:-0}" == 1 ]] && EXTRA+=(--dry-run)
 [[ "${CONTINUE_TRAINING:-0}" == 1 ]] && EXTRA+=(--continue-training)
 for fold in "${FOLDS[@]}"; do
-  "${PYTHON}" -m brats_mets.training.run_nnunet \
+  "${PYTHON}" -m compass_mets.training.run_nnunet \
     --config "${ROOT}/configs/trainers/resencm.json" \
     --fold "${fold}" --action train "${EXTRA[@]}"
 done

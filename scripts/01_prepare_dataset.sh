@@ -18,7 +18,7 @@ if [[ -n "${BRATS_METS_CORRECTED_LABELS_DIR:-}" ]]; then
   CORRECTED_ARGS=(--corrected-labels-dir "${BRATS_METS_CORRECTED_LABELS_DIR}")
 fi
 
-"${PYTHON}" -m brats_mets.data.prepare_dataset501 \
+"${PYTHON}" -m compass_mets.data.prepare_dataset501 \
   --train-dir "${BRATS_METS_TRAIN_DIR}" \
   --valid-dir "${BRATS_METS_VALID_DIR}" \
   --nnunet-raw "${nnUNet_raw}" \

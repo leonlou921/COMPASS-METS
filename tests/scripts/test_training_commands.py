@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from brats_mets.training.run_nnunet import (
+from compass_mets.training.run_nnunet import (
     build_nnunet_command,
     load_training_config,
 )

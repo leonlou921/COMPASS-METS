@@ -41,7 +41,7 @@ from pathlib import Path
 
 import numpy as np
 
-from brats_mets.data.contracts import (
+from compass_mets.data.contracts import (
     DATASET_ID,
     DATASET_NAME,
     FLAT_LABELS,

@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "brats-mets-microbt"
+name = "compass-mets"
 version = "1.0.0"
-description = "Script-driven training and inference pipeline for BraTS-METS MicroBT"
+description = "COMPASS-METS training and inference pipeline for BraTS-METS"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 license = {text = "Apache-2.0"}
@@ -24,7 +24,7 @@ dependencies = [
 test = ["pytest>=8,<9"]
 
 [tool.setuptools.packages.find]
-include = ["brats_mets*"]
+include = ["compass_mets*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

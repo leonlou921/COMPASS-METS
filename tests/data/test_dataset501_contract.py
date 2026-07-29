@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from brats_mets.data.contracts import (
+from compass_mets.data.contracts import (
     DATASET_ID,
     DATASET_NAME,
     MODALITIES,

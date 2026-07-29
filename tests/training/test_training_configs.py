@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from brats_mets.training.run_nnunet import load_training_config
+from compass_mets.training.run_nnunet import load_training_config
 
 
 ROOT = Path(__file__).resolve().parents[2]

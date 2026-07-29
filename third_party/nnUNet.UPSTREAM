@@ -7,6 +7,6 @@ Method: clean git archive of the pinned upstream commit
 License: Apache-2.0, retained in third_party/nnUNet/LICENSE
 
 Project-specific additions:
-- nnunetv2/training/nnUNetTrainer/variants/brats_mets/nnUNetTrainer_ResEncM_ComponentSmallLesionOS.py
-- nnunetv2/training/nnUNetTrainer/variants/brats_mets/nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT.py
-- nnunetv2/training/nnUNetTrainer/variants/brats_mets/nnUNetTrainer_ResEncM_SmallLesionOS.py
+- nnunetv2/training/nnUNetTrainer/variants/compass_mets/nnUNetTrainer_ResEncM_ComponentSmallLesionOS.py
+- nnunetv2/training/nnUNetTrainer/variants/compass_mets/nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT.py
+- nnunetv2/training/nnUNetTrainer/variants/compass_mets/nnUNetTrainer_ResEncM_SmallLesionOS.py

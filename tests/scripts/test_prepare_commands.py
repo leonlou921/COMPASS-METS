@@ -13,7 +13,7 @@ def test_numbered_preprocessing_scripts_use_public_package_and_environment() -> 
     plan = (ROOT / "scripts" / "02_plan_and_preprocess.sh").read_text(
         encoding="utf-8"
     )
-    assert "-m brats_mets.data.prepare_dataset501" in prepare
+    assert "-m compass_mets.data.prepare_dataset501" in prepare
     assert "BRATS_METS_TRAIN_DIR" in prepare
     assert "BRATS_METS_VALID_DIR" in prepare
     assert "--overwrite" not in prepare

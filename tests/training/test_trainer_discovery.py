@@ -13,7 +13,7 @@ TRAINER_ROOT = (
     / "training"
     / "nnUNetTrainer"
 )
-VARIANT_ROOT = TRAINER_ROOT / "variants" / "brats_mets"
+VARIANT_ROOT = TRAINER_ROOT / "variants" / "compass_mets"
 EXPECTED = {
     "nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT",
     "nnUNetTrainer_ResEncM_SmallLesionOS",
@@ -47,7 +47,7 @@ def test_retained_trainers_have_one_recursive_discovery_source() -> None:
 def test_duplicate_and_synthetic_trainers_are_absent() -> None:
     duplicate_root = ROOT / "training" / "nnunet_trainers"
     assert not list(duplicate_root.glob("*.py"))
-    production_roots = [TRAINER_ROOT, ROOT / "brats_mets"]
+    production_roots = [TRAINER_ROOT, ROOT / "compass_mets"]
     offending = [
         path
         for production_root in production_roots

@@ -10,4 +10,4 @@ for path_name in nnUNet_raw nnUNet_preprocessed nnUNet_results; do
   mkdir -p "${!path_name}"
 done
 
-"${PYTHON}" -c "import brats_mets; import nnunetv2; print('environment OK')"
+"${PYTHON}" -c "import compass_mets; import nnunetv2; print('environment OK')"

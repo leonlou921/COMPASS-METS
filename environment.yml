@@ -1,4 +1,4 @@
-name: brats-mets-microbt
+name: compass-mets
 channels:
   - pytorch
   - nvidia

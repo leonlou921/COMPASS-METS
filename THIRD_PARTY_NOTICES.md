@@ -11,6 +11,6 @@ retained at `third_party/nnUNet/LICENSE`.
 
 The vendored tree differs from that upstream commit only by the challenge
 trainer variants in
-`nnunetv2/training/nnUNetTrainer/variants/brats_mets/`. Those local additions
+`nnunetv2/training/nnUNetTrainer/variants/compass_mets/`. Those local additions
 implement the focal-Tversky donor and the two retained small-lesion
 oversampling ablations used by this project.

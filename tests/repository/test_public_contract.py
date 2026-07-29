@@ -17,13 +17,13 @@ def _pyproject_text() -> str:
 def test_public_distribution_and_package_contract() -> None:
     pyproject = _pyproject_text()
     assert re.search(
-        r'(?ms)^\[project\].*?^name\s*=\s*"brats-mets-microbt"$',
+        r'(?ms)^\[project\].*?^name\s*=\s*"compass-mets"$',
         pyproject,
     )
-    assert (ROOT / "brats_mets" / "__init__.py").is_file()
+    assert (ROOT / "compass_mets" / "__init__.py").is_file()
     assert re.search(
         r'(?ms)^\[tool\.setuptools\.packages\.find\].*?'
-        r'^include\s*=\s*\["brats_mets\*"\]$',
+        r'^include\s*=\s*\["compass_mets\*"\]$',
         pyproject,
     )
 
