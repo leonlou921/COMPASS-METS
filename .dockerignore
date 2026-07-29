@@ -4,6 +4,6 @@
 !docker/constraints.lock
 !inference/src/**
 !inference/vendor/**
-!vendor/nnUNet/**
+!third_party/nnUNet/**
 !assets/**
 !provenance/**

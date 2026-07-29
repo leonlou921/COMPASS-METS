@@ -27,7 +27,7 @@ RUN python -m pip install --no-cache-dir \
     --constraint /opt/n03/constraints.lock \
     --requirement /opt/n03/requirements.lock
 
-COPY vendor/nnUNet /opt/n03/vendor/nnUNet
+COPY third_party/nnUNet /opt/n03/vendor/nnUNet
 RUN python -m pip install --no-cache-dir --no-deps /opt/n03/vendor/nnUNet
 
 COPY inference/vendor/pipeline /opt/n03/vendor/pipeline

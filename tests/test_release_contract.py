@@ -47,3 +47,16 @@ def test_release_verifier_accepts_documented_placeholders_and_frozen_config(
     report = inspect_release(tmp_path)
     assert report["passed"] is True
     assert report["n03_config_valid"] is True
+
+
+def test_pinned_nnunet_source_is_present_and_licensed() -> None:
+    root = Path(__file__).resolve().parents[1]
+    source = root / "third_party" / "nnUNet"
+    provenance = (root / "third_party" / "nnUNet.UPSTREAM").read_text(
+        encoding="utf-8"
+    )
+
+    assert (source / "nnunetv2").is_dir()
+    assert (source / "LICENSE").is_file()
+    assert "86606c53ef9f556d6f024a304b52a48378453641" in provenance
+    assert "https://github.com/MIC-DKFZ/nnUNet" in provenance
