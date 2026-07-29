@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "region_gate_v3.py": {
+      "sha256": "acaf687763aab48170d5cf81d755428e7cdb695d5c535c584099441188d5fd18",
+      "upstream_project_path": "region_component_gate_v3_20260727/region_gate_v3.py"
+    },
+    "train_utility_v4.py": {
+      "sha256": "a89e9fd29437877393e865eaf1e3c54b72ffa6cfc77f816c6362a0c932baaa4b",
+      "upstream_project_path": "n03_strict_sequence_20260728/train_utility_v4.py"
+    },
+    "utility_v4.py": {
+      "sha256": "8e30a17c82c3a3c1c834fd5658a30e1409db0a1fbfdb1741dad36027504ace6c",
+      "upstream_project_path": "n03_strict_sequence_20260728/utility_v4.py"
+    }
+  }
+}

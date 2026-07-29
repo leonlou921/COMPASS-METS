@@ -13,7 +13,7 @@ ARCHIVE="${ARTIFACTS}/brats-mets-n03-final.docker.tar"
 test -x "${BK}/buildkitd"
 test -x "${BK}/buildctl"
 test -d "${ROOT}/assets"
-test -d "${ROOT}/vendor/nnUNet"
+test -d "${ROOT}/third_party/nnUNet"
 
 mkdir -p "${STATE}/state" "${ARTIFACTS}" "${ROOT}/logs"
 rm -f "${SOCKET}"

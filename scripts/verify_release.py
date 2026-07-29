@@ -28,6 +28,9 @@ TEXT_SUFFIXES = {
     ".yml",
 }
 IGNORED_PARTS = {".git", ".pytest_cache", "__pycache__"}
+PUBLIC_THIRD_PARTY_BINARY_PREFIXES = (
+    Path("third_party/nnUNet/nnunetv2/tests/example_data"),
+)
 PRIVATE_PATH_PATTERNS = (
     re.compile(r"[A-Za-z]:\\(?:Users|brats_challenge|MICCAI)\\", re.I),
     re.compile(r"/data/" r"coding/challenge(?:/|\b)"),
@@ -50,14 +53,26 @@ def _validate_n03_config(root: Path) -> bool:
     if not path.is_file():
         return False
     config = json.loads(path.read_text(encoding="utf-8"))
+    utility = config.get("utility_v4", {})
     return (
         config.get("candidate_id")
+        == "N03_FINAL_UTILITY_V4"
+        and config.get("baseline_candidate_id")
         == "N03_XF12_LCv3_ET_parent_supported"
         and config.get("proposal_threshold") == 0.25
         and config.get("et_component_cutoff") == 0.5497123599
         and config.get("minimum_parent_model_support") == 2
         and config.get("parent_models") == ["XL", "M", "FT"]
         and config.get("policy") == "add_only_et_parent_supported"
+        and config.get("preserve_anchor") is True
+        and config.get("rerun_anchor_postprocess_after_addition") is False
+        and utility.get("candidate_scope")
+        == "disconnected_et_from_lcv2_structured_union"
+        and utility.get("rgv3_et_cutoff") == 0.7702616034384248
+        and utility.get("accept_all_scores_gte") == 0.75
+        and utility.get("reject_any_utility_score_lt") == 0.5
+        and utility.get("operation") == "et_add_only"
+        and utility.get("preserve_rc_priority") is True
     )
 
 
@@ -70,13 +85,18 @@ def inspect_release(root: Path) -> dict[str, Any]:
             continue
         file_count += 1
         if path.suffix.lower() in {".pth", ".pt", ".npz", ".nii", ".gz", ".tar"}:
-            findings.append(
-                {
-                    "kind": "private_binary",
-                    "path": str(path.relative_to(root)),
-                    "line": None,
-                }
-            )
+            relative = path.relative_to(root)
+            if not any(
+                relative.is_relative_to(prefix)
+                for prefix in PUBLIC_THIRD_PARTY_BINARY_PREFIXES
+            ):
+                findings.append(
+                    {
+                        "kind": "private_binary",
+                        "path": str(relative),
+                        "line": None,
+                    }
+                )
             continue
         if not _is_text_candidate(path):
             continue

@@ -25,20 +25,27 @@ input
   -> FT five-fold best-checkpoint probabilities
   -> LCv1 case features + LCv2 component scores
   -> XF12 structured-probability/V2-strict anchor
-  -> ET-only parent-supported additions
+  -> N03 ET-only parent-supported baseline
+  -> disconnected LCv2 structured-union ET proposals
+  -> RGv3-ET + utility-v4 existence/geometry scoring
+  -> accepted add-only ET updates
   -> one flat uint8 BraTS label map
 ```
 
-N03 uses union proposals at probability `0.25`. An ET component is eligible
+The preserved N03 baseline uses union proposals at probability `0.25` and the
+original parent-support rules. The final utility-v4 stage considers only
+disconnected ET components absent from that baseline. A component is accepted
 only when:
 
-1. its LCv2 score is at least `0.5497123599`;
-2. at least two of XL/M/FT support its ET region at `0.25`;
-3. at least two of XL/M/FT support its TC parent at `0.25`;
-4. at least two of XL/M/FT support its WT parent at `0.25`.
+1. it belongs to the fixed LCv2 structured-union candidate pool;
+2. its RGv3-ET score is at least `0.7702616034384248`;
+3. its LCv2 component probability is at least `0.75`;
+4. its utility-v4 existence probability is at least `0.75`;
+5. its utility-v4 geometry-safety probability is at least `0.75`.
 
-The update is add-only and preserves the XF12 anchor. The earlier component,
-TC-boundary, and strict-RC operations are not run a second time after N03.
+The update is add-only and preserves every N03 anchor voxel and RC priority.
+The earlier component, TC-boundary, and strict-RC operations are not run a
+second time after the ET addition.
 
 ## Output contract
 
@@ -51,3 +58,6 @@ The image writes exactly one root-level `CASE.nii.gz` per input case:
 
 The machine-readable runtime report is written to the configured temporary
 work directory, not the submission output.
+
+The frozen prediction ZIP is not a runtime input. It is consumed only by
+`verification/verify_frozen_equivalence.py` after inference has finished.

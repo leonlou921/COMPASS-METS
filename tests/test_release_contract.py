@@ -22,6 +22,32 @@ def test_release_verifier_rejects_credentials_and_private_absolute_paths(
     assert "private_absolute_path" in kinds
 
 
+def test_release_verifier_allows_only_pinned_nnunet_public_test_fixtures(
+    tmp_path: Path,
+) -> None:
+    public = (
+        tmp_path
+        / "third_party"
+        / "nnUNet"
+        / "nnunetv2"
+        / "tests"
+        / "example_data"
+    )
+    public.mkdir(parents=True)
+    (public / "example_ct_sm.nii.gz").write_bytes(b"upstream fixture")
+    private = tmp_path / "predictions"
+    private.mkdir()
+    (private / "case.nii.gz").write_bytes(b"challenge prediction")
+
+    report = inspect_release(tmp_path)
+    binaries = [
+        finding["path"]
+        for finding in report["findings"]
+        if finding["kind"] == "private_binary"
+    ]
+    assert binaries == [str(Path("predictions") / "case.nii.gz")]
+
+
 def test_release_verifier_accepts_documented_placeholders_and_frozen_config(
     tmp_path: Path,
 ) -> None:
@@ -34,12 +60,24 @@ def test_release_verifier_accepts_documented_placeholders_and_frozen_config(
     (config_root / "final.json").write_text(
         json.dumps(
             {
-                "candidate_id": "N03_XF12_LCv3_ET_parent_supported",
+                "schema_version": 2,
+                "candidate_id": "N03_FINAL_UTILITY_V4",
+                "baseline_candidate_id": "N03_XF12_LCv3_ET_parent_supported",
                 "proposal_threshold": 0.25,
                 "et_component_cutoff": 0.5497123599,
                 "minimum_parent_model_support": 2,
                 "parent_models": ["XL", "M", "FT"],
                 "policy": "add_only_et_parent_supported",
+                "preserve_anchor": True,
+                "rerun_anchor_postprocess_after_addition": False,
+                "utility_v4": {
+                    "candidate_scope": "disconnected_et_from_lcv2_structured_union",
+                    "rgv3_et_cutoff": 0.7702616034384248,
+                    "accept_all_scores_gte": 0.75,
+                    "reject_any_utility_score_lt": 0.5,
+                    "operation": "et_add_only",
+                    "preserve_rc_priority": True,
+                },
             }
         ),
         encoding="utf-8",
@@ -60,3 +98,29 @@ def test_pinned_nnunet_source_is_present_and_licensed() -> None:
     assert (source / "LICENSE").is_file()
     assert "86606c53ef9f556d6f024a304b52a48378453641" in provenance
     assert "https://github.com/MIC-DKFZ/nnUNet" in provenance
+
+
+def test_ordered_shell_workflow_is_present() -> None:
+    root = Path(__file__).resolve().parents[1]
+    expected = {
+        "01_prepare_dataset.sh",
+        "02_train_models.sh",
+        "03_train_learned_gates.sh",
+        "04_export_inference_assets.sh",
+        "05_build_final_image.sh",
+        "06_verify_final_image.sh",
+        "07_release_final_image.sh",
+    }
+    scripts = root / "scripts"
+    assert expected.issubset({path.name for path in scripts.glob("*.sh")})
+
+    for name in sorted(expected):
+        text = (scripts / name).read_text(encoding="utf-8")
+        assert text.startswith("#!/usr/bin/env bash\nset -euo pipefail\n")
+
+    assert "third_party/nnUNet" in (
+        scripts / "05_build_final_image.sh"
+    ).read_text(encoding="utf-8")
+    assert "verify_frozen_equivalence.py" in (
+        scripts / "06_verify_final_image.sh"
+    ).read_text(encoding="utf-8")

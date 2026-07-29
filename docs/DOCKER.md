@@ -14,6 +14,10 @@ assets/
   learned_models/
     lcv1_case/models.joblib
     lcv2_component/models.joblib
+    rgv3_et/models.joblib
+    utility_v4/existence_model.joblib
+    utility_v4/geometry_model.joblib
+    utility_v4/feature_names.json
   provenance/
 ```
 
@@ -33,6 +37,8 @@ python docker/build_asset_inventory.py \
   --ft-root /path/to/FT-run \
   --lcv1-root /path/to/learned_component_gate_v1 \
   --lcv2-root /path/to/learned_component_gate_v2 \
+  --rgv3-root /path/to/region_component_gate_v3 \
+  --utility-v4-root /path/to/N03_ET_add_utility_v4 \
   --source-root inference \
   --output work/source_inventory.json
 
@@ -41,8 +47,8 @@ python docker/prepare_assets.py \
   --output assets
 ```
 
-The nnU-Net source tree used by the trained checkpoints must be staged at
-`vendor/nnUNet`. It remains subject to its upstream license.
+The nnU-Net source tree used by the trained checkpoints is pinned at
+`third_party/nnUNet`. It remains subject to its upstream license.
 
 ## Build
 
@@ -66,11 +72,11 @@ The latter exports a Docker-load-compatible TAR and adjacent SHA256 file.
 2. verify the release scan;
 3. build the image without network access at runtime;
 4. run a real one-case smoke test;
-5. run the complete validation set if permitted;
-6. check output case count, flat layout, geometry, dtype, labels, and
-   aggregate voxel count;
-7. record the image digest and TAR SHA256;
-8. load the TAR into a clean Docker environment and repeat the smoke test.
+5. run the complete 179-case input twice from empty output directories;
+6. compare both runs to the external frozen ZIP for exact case set, arrays,
+   shape, affine, spacing, dtype, labels, and aggregate voxel counts;
+7. require zero changed voxels and exact run-to-run repeatability;
+8. record the image digest and TAR SHA256 only after that gate passes.
 
 Commands:
 
@@ -82,7 +88,17 @@ docker run --rm --gpus all --shm-size=16g \
   -v /path/to/input:/input:ro \
   -v /path/to/empty-output:/output \
   brats-mets-n03:final
+
+bash scripts/06_verify_final_image.sh \
+  /path/to/raw-179-input \
+  /path/to/external-frozen-N03_FINAL_UTILITY_V4.zip
+
+bash scripts/07_release_final_image.sh
 ```
+
+The frozen ZIP is an external oracle. It is neither copied into the Docker
+build context nor used during inference. Any nonzero voxel difference blocks
+release; there is no case-specific patching fallback.
 
 ## Challenge submission package
 
