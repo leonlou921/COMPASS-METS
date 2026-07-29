@@ -1,6 +1,9 @@
 {
-  "schema_version": 1,
-  "candidate_id": "N03_XF12_LCv3_ET_parent_supported",
+  "schema_version": 2,
+  "candidate_id": "N03_FINAL_UTILITY_V4",
+  "baseline_candidate_id": "N03_XF12_LCv3_ET_parent_supported",
+  "evaluated_submission_alias": "N03_ET_utility_v4_gate_MRIpatch_confirm",
+  "implementation_alias": "N03_ET_add_utility_v4_three_state_gate",
   "anchor_id": "XF12_XLM_structured_probability_V2_strict",
   "proposal_threshold": 0.25,
   "et_component_cutoff": 0.5497123599,
@@ -16,5 +19,18 @@
   "policy": "add_only_et_parent_supported",
   "preserve_anchor": true,
   "rerun_anchor_postprocess_after_addition": false,
+  "utility_v4": {
+    "candidate_scope": "disconnected_et_from_lcv2_structured_union",
+    "rgv3_et_cutoff": 0.7702616034384248,
+    "accept_all_scores_gte": 0.75,
+    "reject_any_utility_score_lt": 0.5,
+    "score_columns": [
+      "v2_component_probability",
+      "v4_existence_probability",
+      "v4_geometry_probability"
+    ],
+    "operation": "et_add_only",
+    "preserve_rc_priority": true
+  },
   "output_labels": [0, 1, 2, 3, 4]
 }
