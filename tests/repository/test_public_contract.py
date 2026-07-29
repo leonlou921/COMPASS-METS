@@ -43,6 +43,15 @@ def test_environment_manifests_are_self_contained() -> None:
         assert "docker/" not in text
 
 
+def test_parquet_runtime_is_declared_in_installable_dependency_manifests() -> None:
+    manifests = (
+        ROOT / "pyproject.toml",
+        ROOT / "requirements" / "runtime.txt",
+    )
+    for manifest in manifests:
+        assert "pyarrow==16.1.0" in manifest.read_text(encoding="utf-8")
+
+
 def test_vendored_nnunet_revision_is_exactly_pinned() -> None:
     provenance = (ROOT / "third_party" / "nnUNet.UPSTREAM").read_text(
         encoding="utf-8"
