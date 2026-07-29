@@ -139,3 +139,17 @@ def test_ordered_shell_workflow_is_present() -> None:
     assert "verify_frozen_equivalence.py" in (
         scripts / "06_verify_final_image.sh"
     ).read_text(encoding="utf-8")
+
+
+def test_restricted_host_can_run_an_exported_rootfs_without_docker() -> None:
+    root = Path(__file__).resolve().parents[1]
+    script = (
+        root / "verification" / "run_exported_rootfs.sh"
+    ).read_text(encoding="utf-8")
+    assert script.startswith("#!/usr/bin/env bash\nset -euo pipefail\n")
+    assert "N03_RUNTIME_ROOT" in script
+    assert "/opt/conda/bin/nnUNetv2_predict" in script
+    assert "run_pipeline" in script
+    assert "N03_FINAL_UTILITY_V4" in script
+    private_prefix = "/data/" + "coding/challenge"
+    assert private_prefix not in script

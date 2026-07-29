@@ -83,6 +83,21 @@ The Kaniko path additionally records the Registry image digest in
 `artifacts/image_reference.json`. The tool paths and local Registry storage
 remain host inputs; they are not vendored into this source repository.
 
+For a restricted validation host that cannot launch Docker, export the image
+root filesystem with an OCI-aware tool and run the same packaged Python
+environment directly:
+
+```bash
+bash verification/run_exported_rootfs.sh \
+  /path/to/exported-rootfs \
+  /path/to/raw-input \
+  /path/to/empty-output \
+  /path/to/work
+```
+
+This is a verification transport only. It does not replace the submitted
+Docker archive and it does not permit cached historical probabilities.
+
 ## Validate before submission
 
 1. run the source test suite;
