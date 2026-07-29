@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "candidate_id": "N03_FINAL_UTILITY_V4",
+  "baseline_candidate_id": "N03_XF12_LCv3_ET_parent_supported",
+  "anchor_id": "XF12_XLM_structured_probability_V2_strict",
+  "proposal_threshold": 0.25,
+  "lcv2_cutoffs": {
+    "ET": 0.5497123599,
+    "RC": 0.0877561048,
+    "TC": 0.3819091916,
+    "WT": 0.3819091916
+  },
+  "allowed_add_regions": ["ET"],
+  "allowed_delete_regions": [],
+  "minimum_parent_model_support": 2,
+  "parent_models": ["XL", "M", "FT"],
+  "required_parent_regions": ["ET", "TC", "WT"],
+  "preserve_anchor": true,
+  "preserve_rc_priority": true,
+  "global_v2_rerun": false,
+  "utility_v4": {
+    "candidate_scope": "disconnected_et_from_lcv2_structured_union",
+    "rgv3_et_cutoff": 0.7702616034384248,
+    "accept_threshold": 0.75,
+    "reject_threshold": 0.5,
+    "score_columns": [
+      "v2_component_probability",
+      "v4_existence_probability",
+      "v4_geometry_probability"
+    ],
+    "operation": "et_add_only"
+  },
+  "output_labels": [0, 1, 2, 3, 4]
+}

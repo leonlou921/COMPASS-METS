@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this pipeline, please cite this software repository."
-title: "BraTS-METS 2026 N03 inference and training pipeline"
+title: "COMPASS-METS: BraTS-METS training and inference pipeline"
 type: software
 version: "1.0.0"
 date-released: "2026-07-28"
 license: Apache-2.0
-repository-code: "https://github.com/leonlou921/brats-mets-MicroBT"
+repository-code: "https://github.com/leonlou921/COMPASS-METS"
 authors:
   - alias: "leonlou921"
 keywords:

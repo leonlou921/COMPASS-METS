@@ -1,9 +1,0 @@
-**
-!docker/Dockerfile
-!docker/requirements.lock
-!docker/constraints.lock
-!inference/src/**
-!inference/vendor/**
-!vendor/nnUNet/**
-!assets/**
-!provenance/**

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "model_id": "focal_tversky",
+  "role": "final_ft_donor",
+  "dataset_id": 501,
+  "configuration": "3d_fullres",
+  "folds": [0, 1, 2, 3, 4],
+  "trainer": "nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT",
+  "plans": "nnUNetResEncUNetMPlans",
+  "checkpoint": "checkpoint_best.pth",
+  "pretrained_from": {
+    "trainer": "nnUNetTrainer",
+    "plans": "nnUNetResEncUNetMPlans"
+  }
+}

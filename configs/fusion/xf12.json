@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "candidate_id": "XF12_XLM_structured_probability_V2_strict",
+  "probability_sources": ["XL", "M", "FT"],
+  "channel_order": ["WT", "TC", "ET", "RC"],
+  "fusion_space": "logit",
+  "structured_probability": {
+    "WT": "FT",
+    "TC": "FT",
+    "ET": {
+      "M": 0.85,
+      "FT": 0.15
+    },
+    "RC": {
+      "M": 0.7,
+      "FT": 0.3
+    },
+    "xl_structured_weight": 0.5,
+    "m_side_structured_weight": 0.5
+  },
+  "component_confidence": true,
+  "hierarchy": "ET_subset_TC_subset_WT",
+  "tc_boundary": {
+    "threshold": 0.4,
+    "voxel_budget": 20,
+    "inside_wt_only": true,
+    "existing_tc_only": true
+  },
+  "rc_strict": {
+    "threshold": 0.5,
+    "minimum_volume_mm3": 20,
+    "minimum_mean_probability": 0.7,
+    "minimum_peak_probability": 0.85
+  }
+}

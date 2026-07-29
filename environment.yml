@@ -1,0 +1,12 @@
+name: compass-mets
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch=2.4.1
+  - pytorch-cuda=12.1
+  - pip:
+      - -r requirements/training.txt

@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "brats-mets-n03"
+name = "compass-mets"
 version = "1.0.0"
-description = "Training and frozen inference pipeline for the BraTS-METS N03 candidate"
+description = "COMPASS-METS training and inference pipeline for BraTS-METS"
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 license = {text = "Apache-2.0"}
@@ -15,6 +15,7 @@ dependencies = [
   "nibabel==5.3.3",
   "numpy==1.26.4",
   "pandas==2.3.0",
+  "pyarrow==16.1.0",
   "scikit-learn==1.7.0",
   "scipy==1.13.1",
   "SimpleITK==2.5.3",
@@ -23,12 +24,12 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=8,<9"]
 
+[tool.setuptools.packages.find]
+include = ["compass_mets*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [
   ".",
-  "inference/src",
-  "inference/vendor/lcv1",
-  "inference/vendor/portfolio",
-  "inference/vendor/pipeline",
+  "third_party/nnUNet",
 ]
