@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "model_id": "small_lesion_os",
+  "role": "key_ablation",
+  "dataset_id": 501,
+  "configuration": "3d_fullres",
+  "folds": [0, 1, 2, 3, 4],
+  "trainer": "nnUNetTrainer_ResEncM_SmallLesionOS",
+  "plans": "nnUNetResEncUNetMPlans",
+  "checkpoint": "checkpoint_best.pth"
+}
