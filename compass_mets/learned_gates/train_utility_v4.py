@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 
-from utility_v4 import (
+from compass_mets.learned_gates.utility_v4 import (
     candidate_pool_mask,
     crossfit_binary_classifier,
     model_feature_columns,

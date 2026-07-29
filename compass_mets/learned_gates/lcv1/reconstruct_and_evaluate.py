@@ -17,7 +17,7 @@ import pandas as pd
 from scipy import ndimage as ndi
 from scipy.spatial import cKDTree
 
-from component_gate import (
+from compass_mets.learned_gates.lcv1.component_gate import (
     REGION_NAMES,
     label_to_regions,
     load_probabilities,
@@ -25,7 +25,10 @@ from component_gate import (
     reconstruct_regions,
     regions_to_label,
 )
-from features import equal_logit_fusion, fixed_component_conf_masks
+from compass_mets.learned_gates.lcv1.features import (
+    equal_logit_fusion,
+    fixed_component_conf_masks,
+)
 
 
 def select_safe_candidate(

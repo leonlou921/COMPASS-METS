@@ -1,4 +1,4 @@
-"""Final-fit inference, orchestration, validation, and flat ZIP packaging."""
+"""Final-fit inference and orchestration for LCv1 component gating."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import json
 import os
 import subprocess
 import sys
-import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -19,17 +18,23 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
-from build_features import consolidate_checkpoints
-from component_gate import (
+from compass_mets.learned_gates.lcv1.build_features import consolidate_checkpoints
+from compass_mets.learned_gates.lcv1.component_gate import (
     label_to_regions,
     load_probabilities,
     propose_components,
     reconstruct_regions,
     regions_to_label,
 )
-from features import extract_case_features
-from reconstruct_and_evaluate import apply_v2_final, evaluate_oof
-from train_models import fixed_component_keep, train_crossfit
+from compass_mets.learned_gates.lcv1.features import extract_case_features
+from compass_mets.learned_gates.lcv1.reconstruct_and_evaluate import (
+    apply_v2_final,
+    evaluate_oof,
+)
+from compass_mets.learned_gates.lcv1.train_models import (
+    fixed_component_keep,
+    train_crossfit,
+)
 
 
 def _evaluation_shard_command(
@@ -160,71 +165,6 @@ def _sha256(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
-
-
-def validate_submission_package(zip_path: str | Path, expected: int = 179) -> dict:
-    path = Path(zip_path)
-    with zipfile.ZipFile(path) as archive:
-        names = archive.namelist()
-        bad_crc = archive.testzip()
-    flat = all("/" not in name and "\\" not in name for name in names)
-    legal_names = all(name.endswith(".nii.gz") for name in names)
-    unique = len(set(names)) == len(names)
-    if len(names) != expected or not flat or not legal_names or not unique or bad_crc is not None:
-        raise RuntimeError(
-            f"invalid submission ZIP: entries={len(names)}, flat={flat}, legal={legal_names}, "
-            f"unique={unique}, bad_crc={bad_crc}"
-        )
-    return {
-        "entry_count": len(names),
-        "flat": flat,
-        "legal_names": legal_names,
-        "unique": unique,
-        "crc_ok": bad_crc is None,
-    }
-
-
-def package_submission(
-    prediction_dir: str | Path,
-    submission_root: str | Path,
-    run_id: str,
-    expected: int,
-    selected_candidate: str,
-) -> dict[str, Path]:
-    predictions = Path(prediction_dir)
-    output = Path(submission_root)
-    output.mkdir(parents=True, exist_ok=True)
-    files = sorted(predictions.glob("*.nii.gz"))
-    if len(files) != expected or len({path.name for path in files}) != expected:
-        raise RuntimeError(f"expected {expected} unique predictions, found {len(files)}")
-    zip_path = output / f"{run_id}_{selected_candidate}.zip"
-    temporary = output / f".{zip_path.name}.tmp.{os.getpid()}"
-    with zipfile.ZipFile(
-        temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-    ) as archive:
-        for path in files:
-            archive.write(path, arcname=path.name)
-    os.replace(temporary, zip_path)
-    validation = validate_submission_package(zip_path, expected=expected)
-    digest = _sha256(zip_path)
-    sha_path = zip_path.with_suffix(zip_path.suffix + ".sha256")
-    sha_path.write_text(f"{digest}  {zip_path.name}\n", encoding="utf-8")
-    manifest = {
-        "run_id": run_id,
-        "selected_candidate": selected_candidate,
-        "prediction_count": len(files),
-        "zip_path": str(zip_path),
-        "zip_sha256": digest,
-        "validation": validation,
-        "created_utc": datetime.now(timezone.utc).isoformat(),
-    }
-    manifest_path = output / f"{zip_path.stem}.manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
-    return {
-        "zip_path": zip_path,
-        "sha256_path": sha_path,
-        "manifest_path": manifest_path,
-    }
 
 
 def _prediction_probability(model, frame: pd.DataFrame) -> np.ndarray:
@@ -480,15 +420,11 @@ def run_after_features(config: dict) -> dict[str, str]:
     report = _run_parallel_oof(config)
     selected = str(report["selection"]["selected"]["candidate"])
     predictions = _run_batched_test_inference(config, selected)
-    artifacts = package_submission(
-        predictions,
-        config["submission_root"],
-        run_id=config["run_id"],
-        expected=179,
-        selected_candidate=selected,
-    )
-    _write_run_manifest(config, selected)
-    return {key: str(value) for key, value in artifacts.items()}
+    manifest = _write_run_manifest(config, selected)
+    return {
+        "prediction_dir": str(predictions),
+        "run_manifest": str(manifest),
+    }
 
 
 def main(argv: Iterable[str] | None = None) -> int:
@@ -496,7 +432,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--config", required=True)
     parser.add_argument(
         "--stage",
-        choices=("after-features", "evaluate", "infer", "package"),
+        choices=("after-features", "evaluate", "infer"),
         default="after-features",
     )
     parser.add_argument("--candidate")
@@ -515,19 +451,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             )
             candidate = selection["selected"]["candidate"]
         predictions = infer_test(config, candidate, max_cases=args.max_cases)
-        if args.stage == "infer":
-            result = {"prediction_dir": str(predictions)}
-        else:
-            result = {
-                key: str(value)
-                for key, value in package_submission(
-                    predictions,
-                    config["submission_root"],
-                    config["run_id"],
-                    179,
-                    candidate,
-                ).items()
-            }
+        result = {"prediction_dir": str(predictions)}
     print(json.dumps({"event": "pipeline_stage_complete", "stage": args.stage, **result}), flush=True)
     return 0
 

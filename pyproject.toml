@@ -31,8 +31,4 @@ testpaths = ["tests"]
 pythonpath = [
   ".",
   "third_party/nnUNet",
-  # Temporary compatibility paths; removed when Task 6 migrates LCv1/LCv2.
-  "inference/vendor/lcv1",
-  "inference/vendor/portfolio",
-  "inference/vendor/pipeline",
 ]

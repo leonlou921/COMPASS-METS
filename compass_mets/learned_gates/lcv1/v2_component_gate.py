@@ -8,8 +8,14 @@ import numpy as np
 from scipy import ndimage as ndi
 from scipy import special
 
-from component_gate import REGION_NAMES, _validate_model_probabilities
-from reconstruct_and_evaluate import _filter_components, _mask_bbox
+from compass_mets.learned_gates.lcv1.component_gate import (
+    REGION_NAMES,
+    _validate_model_probabilities,
+)
+from compass_mets.learned_gates.lcv1.reconstruct_and_evaluate import (
+    _filter_components,
+    _mask_bbox,
+)
 
 
 LC_V2_STRUCTURED_FILTER = "LCv2_structured_filter_V2"

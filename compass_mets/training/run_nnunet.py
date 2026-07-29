@@ -109,7 +109,11 @@ def main() -> int:
     args = parser.parse_args()
 
     config = load_training_config(args.config)
-    checkpoint = pretrained_checkpoint(config, args.fold, args.results_root)
+    checkpoint = (
+        pretrained_checkpoint(config, args.fold, args.results_root)
+        if args.action == "train"
+        else None
+    )
     if checkpoint is not None and not args.dry_run and not checkpoint.is_file():
         raise FileNotFoundError(f"missing fold-matched checkpoint: {checkpoint}")
     command = build_nnunet_command(

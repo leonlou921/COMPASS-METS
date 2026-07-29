@@ -1,6 +1,6 @@
 import numpy as np
 
-from component_gate import (
+from compass_mets.learned_gates.lcv1.component_gate import (
     REGION_NAMES,
     label_to_regions,
     match_component,

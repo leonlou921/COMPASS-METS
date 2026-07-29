@@ -12,8 +12,8 @@ from typing import Iterable
 import nibabel as nib
 import pandas as pd
 
-from component_gate import load_probabilities
-from features import extract_case_features
+from compass_mets.learned_gates.lcv1.component_gate import load_probabilities
+from compass_mets.learned_gates.lcv1.features import extract_case_features
 
 
 def _sha256(path: Path) -> str:

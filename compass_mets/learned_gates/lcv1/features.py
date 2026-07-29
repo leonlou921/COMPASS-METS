@@ -9,7 +9,7 @@ import numpy as np
 from scipy import ndimage as ndi
 from scipy import special
 
-from component_gate import (
+from compass_mets.learned_gates.lcv1.component_gate import (
     REGION_NAMES,
     equal_logit_probability,
     label_to_regions,

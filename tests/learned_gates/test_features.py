@@ -4,8 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from build_features import checkpoint_is_complete, write_case_checkpoint
-from features import extract_case_features
+from compass_mets.learned_gates.lcv1.build_features import (
+    checkpoint_is_complete,
+    write_case_checkpoint,
+)
+from compass_mets.learned_gates.lcv1.features import extract_case_features
 
 
 def synthetic_case():

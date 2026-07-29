@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from train_models import (
+from compass_mets.learned_gates.lcv1.train_models import (
     fixed_component_keep,
     iter_crossfit_splits,
     select_fp_constrained_cutoff,

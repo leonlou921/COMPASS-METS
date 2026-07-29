@@ -2,9 +2,8 @@
   "run_id": "learned_component_gate_v1",
   "seed": 20260723,
   "python": "/path/to/python",
-  "source_root": "/path/to/repository/inference/vendor/lcv1",
+  "source_root": "/path/to/COMPASS-METS/compass_mets/learned_gates/lcv1",
   "output_root": "/path/to/output/learned_component_gate_v1",
-  "submission_root": "/path/to/output/submissions",
   "labels_root": "/path/to/nnUNet_raw/Dataset501_BraTS2025MET/labelsTr",
   "oof_roots": {
     "XL": "/path/to/nnUNet_results/Dataset501_BraTS2025MET/nnUNetTrainer__nnUNetResEncUNetXL30GBPlans__3d_fullres",

@@ -1,7 +1,10 @@
 import numpy as np
 
-from component_gate import REGION_NAMES, propose_components
-from v2_component_gate import (
+from compass_mets.learned_gates.lcv1.component_gate import (
+    REGION_NAMES,
+    propose_components,
+)
+from compass_mets.learned_gates.lcv1.v2_component_gate import (
     LC_V2_STRUCTURED_FILTER,
     LC_V2_STRUCTURED_PROTECTED_RESCUE,
     LC_V2_XLFT_FILTER,

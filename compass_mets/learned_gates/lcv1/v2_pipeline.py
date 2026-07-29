@@ -16,24 +16,30 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
-from component_gate import (
+from compass_mets.learned_gates.lcv1.component_gate import (
     REGION_NAMES,
     label_to_regions,
     load_probabilities,
     propose_components,
     regions_to_label,
 )
-from features import extract_case_features, fixed_component_conf_masks
-from reconstruct_and_evaluate import (
+from compass_mets.learned_gates.lcv1.features import (
+    extract_case_features,
+    fixed_component_conf_masks,
+)
+from compass_mets.learned_gates.lcv1.reconstruct_and_evaluate import (
     _case_in_shard,
     apply_v2_final,
     evaluate_case_regions,
     summarize_case_metrics,
 )
-from run_pipeline import package_submission
-from train_models import select_fp_constrained_cutoff
-from train_models_v2 import predict_test_component_probability
-from v2_component_gate import (
+from compass_mets.learned_gates.lcv1.train_models import (
+    select_fp_constrained_cutoff,
+)
+from compass_mets.learned_gates.lcv1.train_models_v2 import (
+    predict_test_component_probability,
+)
+from compass_mets.learned_gates.lcv1.v2_component_gate import (
     CANDIDATES,
     LC_V2_STRUCTURED_FILTER,
     LC_V2_STRUCTURED_PROTECTED_RESCUE,
@@ -914,33 +920,6 @@ def infer_test_cases(
     return {"processed": processed, **counts}
 
 
-def package_all(config: Mapping) -> dict:
-    output_root = Path(config["output_root"])
-    verdict_path = output_root / "submission_verdicts.json"
-    if not verdict_path.is_file():
-        raise RuntimeError("OOF submission verdicts are missing")
-    verdicts = json.loads(verdict_path.read_text(encoding="utf-8"))
-    artifacts = {}
-    for candidate in CANDIDATES:
-        packaged = package_submission(
-            output_root / "test_predictions" / candidate,
-            config["submission_root"],
-            config["run_id"],
-            expected=179,
-            selected_candidate=candidate,
-        )
-        artifacts[candidate] = {
-            "worth_submitting": bool(verdicts[candidate]["worth_submitting"]),
-            "reasons": verdicts[candidate]["reasons"],
-            **{key: str(value) for key, value in packaged.items()},
-        }
-    destination = Path(config["submission_root"]) / f"{config['run_id']}_artifacts.json"
-    destination.write_text(
-        json.dumps(artifacts, indent=2, sort_keys=True), encoding="utf-8"
-    )
-    return artifacts
-
-
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -953,7 +932,6 @@ def main(argv: Iterable[str] | None = None) -> int:
             "evaluate",
             "consolidate-evaluation",
             "infer",
-            "package",
         ),
     )
     parser.add_argument("--max-cases", type=int)
@@ -991,7 +969,13 @@ def main(argv: Iterable[str] | None = None) -> int:
             case_ids=set(args.case_ids) if args.case_ids else None,
         )
     else:
-        result = package_all(config)
+        result = infer_test_cases(
+            config,
+            max_cases=args.max_cases,
+            shard_count=args.shard_count,
+            shard_index=args.shard_index,
+            case_ids=set(args.case_ids) if args.case_ids else None,
+        )
     print(
         json.dumps(
             {"event": f"v2_{args.stage}_complete", "result": result},

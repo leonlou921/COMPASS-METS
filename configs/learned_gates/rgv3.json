@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "seed": 20260727,
+  "families": {
+    "ET": ["ET"],
+    "TCWT": ["TC", "WT"]
+  },
+  "precision_floors": {
+    "ET": 0.97,
+    "TC": 0.98,
+    "WT": 0.98
+  },
+  "folds": [0, 1, 2, 3, 4]
+}

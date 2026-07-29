@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "seed": 20260727,
+  "candidate_pool": {
+    "region": "ET",
+    "baseline_keep": 0,
+    "n01_lcv2_cutoff": 0.5497123599,
+    "rgv3_et_cutoff": 0.7702616034384248
+  },
+  "targets": {
+    "geometry_precision_floor": 0.50
+  },
+  "decision": {
+    "accept_threshold": 0.75,
+    "reject_threshold": 0.50,
+    "fallback": "rgv3_et"
+  },
+  "folds": [0, 1, 2, 3, 4]
+}

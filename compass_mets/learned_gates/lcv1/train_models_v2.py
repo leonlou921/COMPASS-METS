@@ -11,7 +11,11 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from train_models import _fit_model, _predict, feature_columns
+from compass_mets.learned_gates.lcv1.train_models import (
+    _fit_model,
+    _predict,
+    feature_columns,
+)
 
 
 CASE_PROBABILITY_COLUMN = "case_probability_feature"

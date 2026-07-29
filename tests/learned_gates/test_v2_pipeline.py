@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from run_v2_remote import adaptive_case_batches, worker_command
-from v2_pipeline import (
+from compass_mets.learned_gates.lcv1.v2_pipeline import (
     aligned_anchor,
     bbox_from_component_frame,
     calibrate_nested_cutoffs,
@@ -123,72 +122,6 @@ def test_proposal_score_map_handles_zero_components_and_rejects_duplicates():
 
 def test_test_proposal_scores_accept_a_schema_less_empty_component_frame():
     assert proposal_scores_from_predictions(pd.DataFrame(), np.array([])) == {}
-
-
-def test_remote_worker_command_is_explicit_and_sharded(tmp_path):
-    command = worker_command(
-        python_executable="/env/bin/python",
-        source_root=tmp_path / "source",
-        config_path=tmp_path / "config.json",
-        stage="evaluate",
-        shard_count=2,
-        shard_index=1,
-        max_cases=5,
-    )
-    assert command == [
-        "/env/bin/python",
-        str(tmp_path / "source" / "v2_pipeline.py"),
-        "--config",
-        str(tmp_path / "config.json"),
-        "--stage",
-        "evaluate",
-        "--shard-count",
-        "2",
-        "--shard-index",
-        "1",
-        "--max-cases",
-        "5",
-    ]
-
-
-def test_adaptive_case_batches_respect_peak_cost_budget_and_case_uniqueness():
-    costs = {
-        "huge-a": 2_600,
-        "huge-b": 2_400,
-        "small-a": 500,
-        "small-b": 450,
-        "small-c": 400,
-        "small-d": 350,
-    }
-
-    batches = adaptive_case_batches(
-        costs,
-        max_workers=6,
-        max_cases_per_worker=2,
-        peak_cost_budget=3_600,
-    )
-
-    flattened = [case_id for batch in batches for case_id in batch]
-    assert flattened[0] == "huge-a"
-    assert len(flattened) == len(set(flattened))
-    assert len(batches) <= 6
-    assert all(1 <= len(batch) <= 2 for batch in batches)
-    assert sum(max(costs[case_id] for case_id in batch) for batch in batches) <= 3_600
-
-
-def test_remote_worker_command_can_target_an_explicit_case_batch(tmp_path):
-    command = worker_command(
-        python_executable="/env/bin/python",
-        source_root=tmp_path / "source",
-        config_path=tmp_path / "config.json",
-        stage="build-calibration",
-        shard_count=1,
-        shard_index=0,
-        max_cases=2,
-        case_ids=["case-b", "case-a"],
-    )
-
-    assert command[-3:] == ["--case-ids", "case-b", "case-a"]
 
 
 def test_probability_crop_unions_model_support_and_ground_truth(tmp_path):
