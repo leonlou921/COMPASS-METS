@@ -19,7 +19,7 @@ def test_dockerfile_is_pinned_and_runs_only_n03_entrypoint() -> None:
     assert dockerfile.count("/fold_") == 30
     assert "COPY assets/learned_models /opt/n03/assets/learned_models" in dockerfile
     assert "COPY . " not in dockerfile
-    assert "N03_XF12_LCv3_ET_parent_supported" in dockerfile
+    assert "N03_FINAL_UTILITY_V4" in dockerfile
     assert "/input" not in "\n".join(
         line for line in dockerfile.splitlines() if line.lstrip().startswith("COPY")
     )

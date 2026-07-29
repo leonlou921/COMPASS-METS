@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import joblib
 import nibabel as nib
 import numpy as np
 
@@ -12,6 +13,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from n03_docker.pipeline import (  # noqa: E402
     DEFAULT_MODEL_SPECS,
+    _load_learned_bundles,
     label_zyx_to_reference_xyz,
 )
 
@@ -53,3 +55,35 @@ def test_zyx_conversion_rejects_wrong_shape() -> None:
             np.zeros((3, 4, 4), dtype=np.uint8),
             reference,
         )
+
+
+def test_runtime_loads_every_final_gate_asset(tmp_path: Path) -> None:
+    learned = tmp_path / "learned_models"
+    for role in ("lcv1_case", "lcv2_component", "rgv3_et"):
+        destination = learned / role / "models.joblib"
+        destination.parent.mkdir(parents=True)
+        joblib.dump({"role": role}, destination)
+    utility = learned / "utility_v4"
+    utility.mkdir()
+    joblib.dump({"role": "existence"}, utility / "existence_model.joblib")
+    joblib.dump({"role": "geometry"}, utility / "geometry_model.joblib")
+    (utility / "feature_names.json").write_text(
+        '["v2_component_probability", "v3_component_probability"]',
+        encoding="utf-8",
+    )
+
+    bundles = _load_learned_bundles(tmp_path)
+
+    assert set(bundles) == {
+        "lcv1_case",
+        "lcv2_component",
+        "rgv3_et",
+        "utility_v4_existence",
+        "utility_v4_geometry",
+        "utility_v4_feature_names",
+    }
+    assert bundles["rgv3_et"]["role"] == "rgv3_et"
+    assert bundles["utility_v4_feature_names"] == [
+        "v2_component_probability",
+        "v3_component_probability",
+    ]

@@ -2,9 +2,9 @@
 ARG BASE_IMAGE=pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime@sha256:ac7c098a81512e719afa5d2d497f812d7db3498f340a4b819c69cb7b3b257126
 FROM ${BASE_IMAGE}
 
-LABEL org.opencontainers.image.title="BraTS MET N03 final inference"
-LABEL org.opencontainers.image.description="Frozen N03_XF12_LCv3_ET_parent_supported candidate"
-LABEL org.opencontainers.image.version="2026.07.27"
+LABEL org.opencontainers.image.title="BraTS MET N03 final utility-v4 inference"
+LABEL org.opencontainers.image.description="Frozen N03_FINAL_UTILITY_V4 candidate"
+LABEL org.opencontainers.image.version="2026.07.29"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -57,6 +57,6 @@ COPY assets/provenance /opt/n03/assets/provenance
 COPY provenance /opt/n03/provenance
 
 RUN mkdir -p /opt/n03/empty/nnUNet_raw /opt/n03/empty/nnUNet_preprocessed \
-    && python -c "import lightgbm, nnunetv2, torch; from n03_docker.postprocess import CANDIDATE_ID; assert CANDIDATE_ID == 'N03_XF12_LCv3_ET_parent_supported'; assert torch.__version__.startswith('2.4.1')"
+    && python -c "import lightgbm, nnunetv2, torch; from n03_docker.postprocess import CANDIDATE_ID; assert CANDIDATE_ID == 'N03_FINAL_UTILITY_V4'; assert torch.__version__.startswith('2.4.1')"
 
 ENTRYPOINT ["python", "-m", "n03_docker.cli"]

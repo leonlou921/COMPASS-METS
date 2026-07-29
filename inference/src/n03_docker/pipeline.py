@@ -57,11 +57,32 @@ def label_zyx_to_reference_xyz(
     return label.transpose(2, 1, 0)
 
 
-def _load_learned_bundles(assets_root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def _load_learned_bundles(assets_root: Path) -> dict[str, Any]:
     learned = Path(assets_root) / "learned_models"
-    lcv1 = joblib.load(learned / "lcv1_case" / "models.joblib")
-    lcv2 = joblib.load(learned / "lcv2_component" / "models.joblib")
-    return lcv1, lcv2
+    utility = learned / "utility_v4"
+    feature_names = json.loads(
+        (utility / "feature_names.json").read_text(encoding="utf-8")
+    )
+    if (
+        not isinstance(feature_names, list)
+        or not feature_names
+        or not all(isinstance(value, str) and value for value in feature_names)
+    ):
+        raise ValueError("utility-v4 feature names must be a non-empty string list")
+    return {
+        "lcv1_case": joblib.load(learned / "lcv1_case" / "models.joblib"),
+        "lcv2_component": joblib.load(
+            learned / "lcv2_component" / "models.joblib"
+        ),
+        "rgv3_et": joblib.load(learned / "rgv3_et" / "models.joblib"),
+        "utility_v4_existence": joblib.load(
+            utility / "existence_model.joblib"
+        ),
+        "utility_v4_geometry": joblib.load(
+            utility / "geometry_model.joblib"
+        ),
+        "utility_v4_feature_names": feature_names,
+    }
 
 
 def run_pipeline(
@@ -73,7 +94,7 @@ def run_pipeline(
     executable: str = "nnUNetv2_predict",
 ) -> dict[str, Any]:
     """Run the three frozen ensembles sequentially and publish only N03."""
-    from .postprocess import build_n03
+    from .postprocess import build_n03_final
 
     cases = discover_cases(Path(input_root))
     case_ids = {case.case_id for case in cases}
@@ -84,7 +105,7 @@ def run_pipeline(
 
     assets_root = Path(assets_root)
     nnunet_results = assets_root / "nnUNet_results"
-    lcv1_bundle, lcv2_bundle = _load_learned_bundles(assets_root)
+    bundles = _load_learned_bundles(assets_root)
     Path(work_parent).mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="n03-", dir=work_parent) as temporary:
         work_root = Path(temporary)
@@ -112,12 +133,16 @@ def run_pipeline(
             spacing_zyx = tuple(
                 float(value) for value in reference.header.get_zooms()[:3][::-1]
             )
-            label_zyx, audit = build_n03(
+            label_zyx, audit = build_n03_final(
                 case.case_id,
                 arrays,
                 spacing_zyx,
-                lcv1_case_bundle=lcv1_bundle,
-                lcv2_component_bundle=lcv2_bundle,
+                lcv1_case_bundle=bundles["lcv1_case"],
+                lcv2_component_bundle=bundles["lcv2_component"],
+                rgv3_et_bundle=bundles["rgv3_et"],
+                utility_v4_existence_model=bundles["utility_v4_existence"],
+                utility_v4_geometry_model=bundles["utility_v4_geometry"],
+                utility_v4_feature_names=bundles["utility_v4_feature_names"],
             )
             label_xyz = label_zyx_to_reference_xyz(label_zyx, reference)
             publish_segmentation(case.case_id, label_xyz, reference, output_root)
@@ -131,7 +156,7 @@ def run_pipeline(
 
     validate_flat_output_set(output_root, case_ids)
     report = {
-        "candidate": "N03_XF12_LCv3_ET_parent_supported",
+        "candidate": "N03_FINAL_UTILITY_V4",
         "case_count": len(cases),
         "model_sequence": list(MODEL_SEQUENCE),
         "audits": audits,
