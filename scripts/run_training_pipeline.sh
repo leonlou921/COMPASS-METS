@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
-SCRIPT_DIR=$(dirname "${SCRIPT_PATH}")
-ROOT=$(dirname "${SCRIPT_DIR}")
-REGISTRY="${ROOT}/configs/models/final_models.json"
-V1_CONFIG="${1:?usage: run_training_pipeline.sh V1_CONFIG V2_CONFIG}"
-V2_CONFIG="${2:?usage: run_training_pipeline.sh V1_CONFIG V2_CONFIG}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-bash "${ROOT}/preprocessing/plan_and_preprocess.sh"
+bash "${ROOT}/scripts/00_setup_environment.sh"
+bash "${ROOT}/scripts/01_prepare_dataset.sh"
+bash "${ROOT}/scripts/02_plan_and_preprocess.sh"
+bash "${ROOT}/scripts/03_train_resencm_5fold.sh"
+bash "${ROOT}/scripts/04_train_resencxl_5fold.sh"
+bash "${ROOT}/scripts/05_train_small_lesion_ft_5fold.sh"
+bash "${ROOT}/scripts/06_generate_oof_probabilities.sh"
+bash "${ROOT}/scripts/07_train_learned_gates.sh"
 
-python "${ROOT}/training/run_nnunet.py" \
-  --registry "${REGISTRY}" --model m --action train
-python "${ROOT}/training/run_nnunet.py" \
-  --registry "${REGISTRY}" --model ft --action train
-python "${ROOT}/training/run_nnunet.py" \
-  --registry "${REGISTRY}" --model xl --action train
-
-for model in m ft xl; do
-  python "${ROOT}/training/run_nnunet.py" \
-    --registry "${REGISTRY}" --model "${model}" --action validate
-done
-
-bash "${ROOT}/training/train_learned_gates.sh" "${V1_CONFIG}" "${V2_CONFIG}"
+if [[ "${RUN_TEST_INFERENCE:-0}" == 1 ]]; then
+  bash "${ROOT}/scripts/08_predict_test_probabilities.sh"
+  bash "${ROOT}/scripts/09_build_n03_utility_v4.sh"
+fi

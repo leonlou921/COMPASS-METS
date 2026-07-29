@@ -3,7 +3,7 @@
 
 The script can either consume already extracted BraTS case directories:
 
-  python preprocessing/prepare_dataset501.py \
+  python -m compass_mets.data.prepare_dataset501 \
     --train-dir /path/to/BraTS-training \
     --valid-dir /path/to/BraTS-validation
 

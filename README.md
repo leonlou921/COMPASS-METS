@@ -1,113 +1,105 @@
-# BraTS-METS 2026 MicroBT
+# COMPASS-METS
 
-Reproducible source release for the final
-`N03_FINAL_UTILITY_V4` inference candidate used in the
-BraTS-METS challenge.
+COMPASS-METS is the source release for our BraTS-METS segmentation system. It
+contains the complete data-preparation, training, out-of-fold learned-gate,
+three-source inference, XF12 fusion, N03 parent-supported, and final
+`N03_FINAL_UTILITY_V4` postprocessing code.
 
-The repository covers the complete method:
+The repository intentionally contains source code only. Challenge images,
+labels, checkpoints, learned model files, probability maps, and predictions
+must remain outside Git.
 
-1. convert the four BraTS MRI modalities and labels to nnU-Net Dataset501;
-2. plan and preprocess the dataset;
-3. train five folds of ResEncXL, ResEncM, and the fold-matched
-   ResEncM DiceCE/Focal-Tversky model;
-4. export out-of-fold probabilities and train the learned case/component
-   gates;
-5. run the frozen XL/M/FT soft-probability pipeline;
-6. construct the XF12/V2-strict anchor and the parent-supported N03 baseline;
-7. score disconnected ET additions using LCv2, RGv3-ET, utility-v4 existence,
-   and utility-v4 geometry-safety models;
-8. preserve the anchor and RC priority while applying accepted ET additions;
-9. validate flat BraTS label outputs and build the offline Docker image.
+## Final method
 
-No challenge data, labels, checkpoints, learned-model binaries, probability
-maps, predictions, platform scores, credentials, or Docker archive are stored
-in Git. Those assets must be obtained or trained separately.
+The final system uses two primary five-fold nnU-Net models and one directly
+required fine-tuned donor:
 
-## Frozen final candidate
+| Role | Trainer | Plans | Checkpoint |
+|---|---|---|---|
+| ResEncM | `nnUNetTrainer` | `nnUNetResEncUNetMPlans` | `checkpoint_best.pth` |
+| ResEncXL | `nnUNetTrainer` | `nnUNetResEncUNetXL30GBPlans` | `checkpoint_best.pth` |
+| FT donor | `nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT` | `nnUNetResEncUNetMPlans` | `checkpoint_best.pth` |
 
-| Item | Value |
-|---|---|
-| Candidate | `N03_FINAL_UTILITY_V4` |
-| Baseline | `N03_XF12_LCv3_ET_parent_supported` |
-| Proposal threshold | `0.25` |
-| Candidate pool | disconnected ET from the LCv2 structured union |
-| RGv3 ET cutoff | `0.7702616034384248` |
-| Utility acceptance | LCv2, existence, and geometry scores all `>=0.75` |
-| Update policy | add-only ET; preserve N03 anchor and RC; enforce hierarchy |
-| Model ensemble | five `checkpoint_best.pth` folds per XL, M, and FT |
-| Runtime input | four aligned NIfTI volumes per case |
-| Runtime output | one flat `CASE.nii.gz`, labels `0,1,2,3,4` |
+Each source ensembles folds 0–4 and exports four region probabilities in
+`WT, TC, ET, RC` order. The final chain is:
 
-The machine-readable specifications are
-[`configs/models/final_models.json`](configs/models/final_models.json) and
-[`configs/n03/final.json`](configs/n03/final.json).
+```text
+ResEncXL + ResEncM + FT probabilities
+  -> XF12 structured-probability/V2-strict anchor
+  -> LCv1 + LCv2 component scoring
+  -> N03 ET-only parent-supported additions
+  -> RGv3-ET and UTILITY_V4 three-state gate
+  -> add-only ET update preserving the N03 anchor and RC priority
+```
 
-## Quick start
+The frozen machine-readable specifications are:
 
-The repository vendors the pinned upstream nnU-Net source at commit
-`86606c53ef9f556d6f024a304b52a48378453641`, together with the four project
-Trainer classes. Run the ordered workflow:
+- [`configs/trainers/resencm.json`](configs/trainers/resencm.json)
+- [`configs/trainers/resencxl.json`](configs/trainers/resencxl.json)
+- [`configs/trainers/focal_tversky.json`](configs/trainers/focal_tversky.json)
+- [`configs/fusion/xf12.json`](configs/fusion/xf12.json)
+- [`configs/final/n03_utility_v4.json`](configs/final/n03_utility_v4.json)
+
+## Installation
+
+Python 3.10 is recommended. The exact upstream nnU-Net 2.6.2 source is
+vendored under `third_party/nnUNet` at commit
+`86606c53ef9f556d6f024a304b52a48378453641`.
+
+```bash
+conda env create -f environment.yml
+conda activate compass-mets
+python -m pip install -e third_party/nnUNet
+python -m pip install -e .
+```
+
+Set the normal nnU-Net storage roots:
 
 ```bash
 export nnUNet_raw=/path/to/nnUNet_raw
 export nnUNet_preprocessed=/path/to/nnUNet_preprocessed
 export nnUNet_results=/path/to/nnUNet_results
-
-bash scripts/01_prepare_dataset.sh /path/to/training /path/to/validation
-bash scripts/02_train_models.sh
-bash scripts/03_train_learned_gates.sh /path/to/lcv1.json /path/to/lcv2.json
-bash scripts/04_export_inference_assets.sh
-bash scripts/05_build_final_image.sh
-bash scripts/06_verify_final_image.sh /path/to/raw-input /path/to/frozen-reference.zip
-bash scripts/07_release_final_image.sh
-bash scripts/08_package_submission.sh /path/to/predictions
 ```
 
-Steps `06` and `07` fail closed unless two fresh 179-case runs are
-voxel-identical to the frozen external reference. The reference ZIP is never
-copied into the image. If an authorized release decision accepts a measured
-nonzero difference, run `07_release_final_image.sh
---accept-recorded-difference`; this still requires all 179 cases to pass
-case-set, shape, affine, spacing, dtype, and label checks, and preserves the
-exact differing-case and voxel counts in the release manifest.
+## Ordered workflow
 
-`05_build_final_image.sh` selects rootless BuildKit by default. On the
-restricted challenge host, set `N03_IMAGE_BUILDER=kaniko` and provide
-`KANIKO_ROOTFS_TAR`, `REGISTRY_BINARY`, `REGISTRY_CONFIG`, `CRANE`,
-`BASE_IMAGE`, and `IMAGE_REF`; this reproduces the local Registry + Kaniko
-workflow without hard-coding any private machine path.
-
-Run the frozen container after preparing the private assets:
+Every public entry point is a Bash or Python script:
 
 ```bash
-docker build -f docker/Dockerfile -t brats-mets-n03:final .
-docker run --rm --gpus all --shm-size=16g \
-  -v /path/to/input:/input:ro \
-  -v /path/to/empty-output:/output \
-  brats-mets-n03:final
+bash scripts/00_setup_environment.sh
+bash scripts/01_prepare_dataset.sh
+bash scripts/02_plan_and_preprocess.sh
+bash scripts/03_train_resencm_5fold.sh
+bash scripts/04_train_resencxl_5fold.sh
+bash scripts/05_train_small_lesion_ft_5fold.sh
+bash scripts/06_generate_oof_probabilities.sh
+bash scripts/07_train_learned_gates.sh
+bash scripts/08_predict_test_probabilities.sh
+bash scripts/09_build_n03_utility_v4.sh
 ```
 
-See [docs/DATA.md](docs/DATA.md), [docs/TRAINING.md](docs/TRAINING.md),
-[docs/INFERENCE.md](docs/INFERENCE.md), and [docs/DOCKER.md](docs/DOCKER.md)
-for the complete ordered workflow.
+The scripts are fail-fast and require their data/model paths through
+environment variables. See:
 
-## Reproducibility boundary
+- [Data preparation](docs/DATA.md)
+- [Training and learned gates](docs/TRAINING.md)
+- [Inference and final postprocessing](docs/INFERENCE.md)
+- [Pipeline map](docs/PIPELINE.md)
+- [Configuration reference](docs/CONFIGURATION_REFERENCE.md)
+- [Reproducibility boundary](docs/REPRODUCIBILITY.md)
 
-This release freezes the algorithm and runtime contract. The published source
-can reproduce the candidate when supplied with the exact hash-locked
-checkpoints and learned gate bundles, pinned nnU-Net revision, and input
-images. Retraining may vary numerically because of GPU kernels and stochastic
-optimization; it is therefore not claimed to regenerate byte-identical
-weights.
+## Verification
 
-The final image manifest is written only after external verification. Exact
-equivalence remains the default gate; an explicitly accepted recorded
-difference is labelled as such rather than reported as equivalence.
-The Docker archive and frozen prediction ZIP are excluded from Git because
-they contain private weights or challenge predictions.
+Source-release checks do not require challenge test predictions:
+
+```bash
+python -m pytest -q
+python -m compileall -q compass_mets third_party/nnUNet/nnunetv2
+python scripts/verify_release.py . --output release_audit.json
+```
 
 ## License and citation
 
-Code in this repository is released under Apache-2.0. Third-party components
-retain their original licenses. Please cite the repository using
-[`CITATION.cff`](CITATION.cff).
+Project code is Apache-2.0. Vendored dependencies retain their upstream
+licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Cite this
+software using [CITATION.cff](CITATION.cff).

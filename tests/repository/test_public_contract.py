@@ -74,3 +74,34 @@ def test_vendored_nnunet_revision_is_exactly_pinned() -> None:
 )
 def test_container_and_submission_entrypoints_are_absent(path: str) -> None:
     assert not (ROOT / path).exists()
+
+
+def test_public_docs_use_compass_mets_source_pipeline_only() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert readme.startswith("# COMPASS-METS")
+    assert "configs/final/n03_utility_v4.json" in readme
+    assert "scripts/09_build_n03_utility_v4.sh" in readme
+    combined = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]
+    )
+    for stale in (
+        "configs/models/final_models.json",
+        "configs/n03/final.json",
+        "preprocessing/prepare_dataset501.py",
+        "training/run_nnunet.py",
+        "inference/src/n03_docker",
+        "brats-mets-MicroBT",
+        "brats_mets",
+    ):
+        assert stale not in combined
+
+
+def test_legacy_asset_and_release_metadata_are_absent() -> None:
+    for relative in (
+        "provenance/learned_gate_sources.json",
+        "provenance/source_inventory.schema.json",
+        "verification/release_manifest.py",
+        "scripts/04_export_inference_assets.sh",
+    ):
+        assert not (ROOT / relative).exists()

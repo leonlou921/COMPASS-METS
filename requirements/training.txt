@@ -1,3 +1,2 @@
 -r runtime.txt
-nnunetv2
 torch==2.4.1
