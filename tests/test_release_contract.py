@@ -48,6 +48,21 @@ def test_release_verifier_allows_only_pinned_nnunet_public_test_fixtures(
     assert binaries == [str(Path("predictions") / "case.nii.gz")]
 
 
+def test_release_verifier_does_not_treat_generated_private_assets_as_source(
+    tmp_path: Path,
+) -> None:
+    assets = tmp_path / "assets" / "nnUNet_results" / "fold_0"
+    assets.mkdir(parents=True)
+    (assets / "checkpoint_best.pth").write_bytes(b"private model")
+
+    report = inspect_release(tmp_path)
+    assert not [
+        finding
+        for finding in report["findings"]
+        if finding["path"].startswith("assets")
+    ]
+
+
 def test_release_verifier_accepts_documented_placeholders_and_frozen_config(
     tmp_path: Path,
 ) -> None:

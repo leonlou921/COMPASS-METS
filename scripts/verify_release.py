@@ -28,6 +28,7 @@ TEXT_SUFFIXES = {
     ".yml",
 }
 IGNORED_PARTS = {".git", ".pytest_cache", "__pycache__"}
+IGNORED_GENERATED_ROOTS = {"artifacts", "assets", "logs", "tools", "work"}
 PUBLIC_THIRD_PARTY_BINARY_PREFIXES = (
     Path("third_party/nnUNet/nnunetv2/tests/example_data"),
 )
@@ -81,11 +82,15 @@ def inspect_release(root: Path) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     file_count = 0
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or any(part in IGNORED_PARTS for part in path.parts):
+        relative = path.relative_to(root)
+        if (
+            not path.is_file()
+            or any(part in IGNORED_PARTS for part in path.parts)
+            or (relative.parts and relative.parts[0] in IGNORED_GENERATED_ROOTS)
+        ):
             continue
         file_count += 1
         if path.suffix.lower() in {".pth", ".pt", ".npz", ".nii", ".gz", ".tar"}:
-            relative = path.relative_to(root)
             if not any(
                 relative.is_relative_to(prefix)
                 for prefix in PUBLIC_THIRD_PARTY_BINARY_PREFIXES
