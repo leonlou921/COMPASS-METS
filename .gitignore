@@ -1,9 +1,9 @@
 # Private challenge data and model artifacts
-data/
-assets/
-nnUNet_raw/
-nnUNet_preprocessed/
-nnUNet_results/
+/data/
+/assets/
+/nnUNet_raw/
+/nnUNet_preprocessed/
+/nnUNet_results/
 *.nii
 *.nii.gz
 *.npz
@@ -17,12 +17,12 @@ nnUNet_results/
 checkpoint_*
 
 # Generated outputs
-output/
-outputs/
-predictions/
-submissions/
-work/
-logs/
+/output/
+/outputs/
+/predictions/
+/submissions/
+/work/
+/logs/
 release_audit.json
 artifacts.json
 generation_manifest.json

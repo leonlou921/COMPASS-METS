@@ -41,30 +41,22 @@ from pathlib import Path
 
 import numpy as np
 
+from brats_mets.data.contracts import (
+    DATASET_ID,
+    DATASET_NAME,
+    FLAT_LABELS,
+    MODALITIES,
+    REGION_LABELS,
+    REGIONS_CLASS_ORDER,
+    build_dataset_json,
+)
 
-DEFAULT_ROOT = Path(__file__).resolve().parent
+
+DEFAULT_ROOT = Path.cwd()
 TRAIN_ZIP = "MICCAI-LH-BraTS2025-MET-Challenge-TrainingData_batch1.zip"
 VALID_ZIP = "MICCAI-LH-BraTS2025-MET-Challenge-ValidationData_batch1.zip"
 CORRECTED_LABELS_ZIP = "MICCAI-LH-BraTS2025-MET-Challenge-corrected-labels_batch1.zip"
 
-MODALITIES = ("t1c", "t1n", "t2f", "t2w")
-FLAT_LABELS = {
-    "background": 0,
-    "NETC": 1,
-    "SNFH": 2,
-    "ET": 3,
-    "RC": 4,
-}
-REGION_LABELS = {
-    "background": 0,
-    "WT": (1, 2, 3),
-    "TC": (1, 3),
-    "ET": 3,
-    "RC": 4,
-}
-# The output label map is reconstructed in this order from WT, TC, ET, RC.
-# For BraTS-MET labels, WT-only voxels are SNFH=2 and TC-only voxels are NETC=1.
-REGIONS_CLASS_ORDER = (2, 1, 3, 4)
 NIFTI_DTYPES = {
     2: "u1",
     4: "i2",
@@ -113,8 +105,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--extract-dir", type=Path, help="Extraction folder. Default: <root>/extracted")
     parser.add_argument("--nnunet-raw", type=Path, help="nnU-Net raw folder. Default: env nnUNet_raw or <root>/nnUNet_raw")
-    parser.add_argument("--dataset-id", type=int, default=501, help="nnU-Net dataset ID. Default: 501")
-    parser.add_argument("--dataset-name", default="BraTS2025MET", help="nnU-Net dataset name. Default: BraTS2025MET")
+    parser.add_argument("--dataset-id", type=int, default=DATASET_ID, help="nnU-Net dataset ID. Default: 501")
+    parser.add_argument("--dataset-name", default=DATASET_NAME, help="nnU-Net dataset name. Default: BraTS2025MET")
     parser.add_argument(
         "--modalities",
         nargs=4,
@@ -183,8 +175,7 @@ def require_complete_zip(path: Path) -> None:
         fail(
             f"Training ZIP is not complete yet:\n"
             f"  partial: {part_path} ({format_bytes(part_path.stat().st_size)})\n"
-            f"Resume with:\n"
-            f"  python {DEFAULT_ROOT / 'download_brats2025_met_training_batch1.py'} --synid syn64919665"
+            "Resume the authorized download from the official challenge source."
         )
 
     fail(f"Missing ZIP: {path}")
@@ -402,15 +393,11 @@ def json_ready_labels(labels: dict[str, int | tuple[int, ...]]) -> dict[str, int
 
 
 def write_dataset_json(dataset_dir: Path, train_count: int, modalities: tuple[str, ...], label_mode: str) -> None:
-    labels = REGION_LABELS if label_mode == "regions" else FLAT_LABELS
-    data = {
-        "channel_names": {str(i): name for i, name in enumerate(modalities)},
-        "labels": json_ready_labels(labels),
-        "numTraining": train_count,
-        "file_ending": ".nii.gz",
-    }
-    if label_mode == "regions":
-        data["regions_class_order"] = list(REGIONS_CLASS_ORDER)
+    data = build_dataset_json(
+        num_training=train_count,
+        modalities=modalities,
+        label_mode=label_mode,
+    )
     (dataset_dir / "dataset.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 

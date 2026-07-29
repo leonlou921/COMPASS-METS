@@ -77,7 +77,7 @@ def test_validation_command_is_best_checkpoint_oof_export(tmp_path: Path) -> Non
 
 def test_ordered_public_pipeline_scripts_cover_preprocess_training_and_gates() -> None:
     root = Path(__file__).resolve().parents[1]
-    preprocess = (root / "preprocessing" / "plan_and_preprocess.sh").read_text(
+    preprocess = (root / "scripts" / "02_plan_and_preprocess.sh").read_text(
         encoding="utf-8"
     )
     gates = (root / "training" / "train_learned_gates.sh").read_text(
