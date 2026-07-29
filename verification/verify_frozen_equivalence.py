@@ -152,7 +152,7 @@ def _write_csv(rows: list[dict[str, Any]], destination: Path) -> None:
 def verify_frozen_equivalence(
     reference_zip: Path,
     candidate_dir: Path,
-    repeat_dir: Path,
+    repeat_dir: Path | None,
     *,
     expected_cases: int = 179,
     json_output: Path | None = None,
@@ -160,9 +160,13 @@ def verify_frozen_equivalence(
 ) -> dict[str, Any]:
     reference_zip = Path(reference_zip).resolve()
     candidate_dir = Path(candidate_dir).resolve()
-    repeat_dir = Path(repeat_dir).resolve()
     candidate = _directory_cases(candidate_dir)
-    repeat = _directory_cases(repeat_dir)
+    repeat = (
+        _directory_cases(Path(repeat_dir).resolve())
+        if repeat_dir is not None
+        else None
+    )
+    repeat_enabled = repeat is not None
 
     with tempfile.TemporaryDirectory(prefix="n03-frozen-reference-") as temporary:
         reference = _extract_flat_reference(
@@ -170,23 +174,29 @@ def verify_frozen_equivalence(
         )
         reference_ids = set(reference)
         candidate_ids = set(candidate)
-        repeat_ids = set(repeat)
+        repeat_ids = set(repeat) if repeat is not None else set()
 
         candidate_missing = sorted(reference_ids - candidate_ids)
         candidate_extra = sorted(candidate_ids - reference_ids)
-        repeat_missing = sorted(reference_ids - repeat_ids)
-        repeat_extra = sorted(repeat_ids - reference_ids)
+        repeat_missing = (
+            sorted(reference_ids - repeat_ids) if repeat_enabled else None
+        )
+        repeat_extra = (
+            sorted(repeat_ids - reference_ids) if repeat_enabled else None
+        )
 
         aggregate = {
             "reference": _empty_counts(),
             "candidate": _empty_counts(),
-            "repeat": _empty_counts(),
         }
+        if repeat_enabled:
+            aggregate["repeat"] = _empty_counts()
         rows: list[dict[str, Any]] = []
         different_voxels = 0
         repeat_different_voxels = 0
         incomparable_candidate = 0
         incomparable_repeat = 0
+        different_case_count = 0
 
         for case_id in sorted(reference):
             reference_image, reference_array = _load(reference[case_id])
@@ -198,7 +208,9 @@ def verify_frozen_equivalence(
             row: dict[str, Any] = {
                 "case_id": case_id,
                 "candidate_present": case_id in candidate,
-                "repeat_present": case_id in repeat,
+                "repeat_present": (
+                    case_id in repeat if repeat is not None else None
+                ),
                 "reference_labels_legal": reference_legal,
             }
             candidate_image = None
@@ -219,10 +231,13 @@ def verify_frozen_equivalence(
                     incomparable_candidate += 1
                 else:
                     different_voxels += int(result["changed_voxels"])
+                    different_case_count += int(
+                        int(result["changed_voxels"]) > 0
+                    )
             else:
                 incomparable_candidate += 1
 
-            if case_id in repeat:
+            if repeat is not None and case_id in repeat:
                 repeat_image, repeat_array = _load(repeat[case_id])
                 repeat_result = _compare_images(
                     reference_image,
@@ -261,63 +276,92 @@ def verify_frozen_equivalence(
                         )
                 else:
                     incomparable_repeat += 1
-            else:
+            elif repeat is not None:
                 incomparable_repeat += 1
             rows.append(row)
 
-    row_gate = all(
+    candidate_structural_gate = all(
         row.get("reference_labels_legal") is True
-        and row.get("array_equal") is True
         and row.get("shape_equal") is True
         and row.get("affine_equal") is True
         and row.get("spacing_equal") is True
         and row.get("dtype_equal") is True
         and row.get("labels_legal") is True
-        and row.get("repeat_array_equal") is True
-        and row.get("repeat_shape_equal") is True
-        and row.get("repeat_affine_equal") is True
-        and row.get("repeat_spacing_equal") is True
-        and row.get("repeat_dtype_equal") is True
-        and row.get("repeat_labels_legal") is True
-        and row.get("candidate_repeat_array_equal") is True
         for row in rows
+    )
+    candidate_exact_gate = candidate_structural_gate and all(
+        row.get("array_equal") is True for row in rows
+    )
+    repeat_gate = (
+        all(
+            row.get("repeat_array_equal") is True
+            and row.get("repeat_shape_equal") is True
+            and row.get("repeat_affine_equal") is True
+            and row.get("repeat_spacing_equal") is True
+            and row.get("repeat_dtype_equal") is True
+            and row.get("repeat_labels_legal") is True
+            and row.get("candidate_repeat_array_equal") is True
+            for row in rows
+        )
+        if repeat_enabled
+        else True
     )
     case_count = len(reference_ids)
     candidate_case_set_equal = candidate_ids == reference_ids
-    repeat_case_set_equal = repeat_ids == reference_ids
-    aggregate_equal = (
-        aggregate["reference"]
-        == aggregate["candidate"]
-        == aggregate["repeat"]
+    repeat_case_set_equal = (
+        repeat_ids == reference_ids if repeat_enabled else None
     )
-    passed = (
+    aggregate_equal = aggregate["reference"] == aggregate["candidate"] and (
+        not repeat_enabled
+        or aggregate["reference"] == aggregate["repeat"]
+    )
+    structural_passed = (
         case_count == int(expected_cases)
         and candidate_case_set_equal
-        and repeat_case_set_equal
-        and different_voxels == 0
-        and repeat_different_voxels == 0
         and incomparable_candidate == 0
-        and incomparable_repeat == 0
+        and candidate_structural_gate
+    )
+    passed = (
+        structural_passed
+        and different_voxels == 0
         and aggregate_equal
-        and row_gate
+        and candidate_exact_gate
+        and (
+            not repeat_enabled
+            or (
+                repeat_case_set_equal is True
+                and repeat_different_voxels == 0
+                and incomparable_repeat == 0
+                and repeat_gate
+            )
+        )
     )
     report: dict[str, Any] = {
         "candidate_id": CANDIDATE_ID,
+        "verification_mode": (
+            "candidate_and_repeat" if repeat_enabled else "single_run"
+        ),
         "passed": passed,
+        "structural_passed": structural_passed,
         "expected_case_count": int(expected_cases),
         "case_count": case_count,
         "candidate_case_count": len(candidate_ids),
-        "repeat_case_count": len(repeat_ids),
+        "repeat_case_count": len(repeat_ids) if repeat_enabled else None,
         "candidate_case_set_equal": candidate_case_set_equal,
         "repeat_case_set_equal": repeat_case_set_equal,
         "candidate_missing_cases": candidate_missing,
         "candidate_extra_cases": candidate_extra,
         "repeat_missing_cases": repeat_missing,
         "repeat_extra_cases": repeat_extra,
+        "different_case_count": different_case_count,
         "different_voxels": different_voxels,
-        "repeat_different_voxels": repeat_different_voxels,
+        "repeat_different_voxels": (
+            repeat_different_voxels if repeat_enabled else None
+        ),
         "incomparable_candidate_cases": incomparable_candidate,
-        "incomparable_repeat_cases": incomparable_repeat,
+        "incomparable_repeat_cases": (
+            incomparable_repeat if repeat_enabled else None
+        ),
         "aggregate_voxel_counts": aggregate,
         "aggregate_voxel_counts_equal": aggregate_equal,
         "cases": rows,
@@ -338,7 +382,7 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference-zip", type=Path, required=True)
     parser.add_argument("--candidate-dir", type=Path, required=True)
-    parser.add_argument("--repeat-dir", type=Path, required=True)
+    parser.add_argument("--repeat-dir", type=Path)
     parser.add_argument("--expected-cases", type=int, default=179)
     parser.add_argument("--json-output", type=Path, required=True)
     parser.add_argument("--csv-output", type=Path, required=True)

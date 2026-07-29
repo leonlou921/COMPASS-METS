@@ -8,44 +8,42 @@ VERIFY_REPORT="${VERIFY_REPORT:-${ROOT}/work/frozen-equivalence/frozen_equivalen
 RELEASE_MANIFEST="${RELEASE_MANIFEST:-${ROOT}/artifacts/release_manifest.json}"
 
 if [[ "${1:-}" == "--help" ]]; then
-  echo "usage: $0"
-  echo "fails closed unless the external 179-case frozen equivalence gate passed"
+  echo "usage: $0 [--accept-recorded-difference]"
+  echo "exact equivalence is the default; the explicit flag records an approved"
+  echo "nonzero voxel difference only after all 179 structural checks pass"
   exit 0
+fi
+accept_recorded_difference=false
+if [[ "${1:-}" == "--accept-recorded-difference" ]]; then
+  accept_recorded_difference=true
+  shift
 fi
 [[ "$#" -eq 0 ]] || { echo "unexpected arguments" >&2; exit 2; }
 test -f "${ARCHIVE}"
 test -f "${VERIFY_REPORT}"
 
-"${PYTHON}" - "${VERIFY_REPORT}" "${ARCHIVE}" "${RELEASE_MANIFEST}" <<'PY'
+"${PYTHON}" - \
+  "${VERIFY_REPORT}" "${ARCHIVE}" "${RELEASE_MANIFEST}" \
+  "${accept_recorded_difference}" "${ROOT}" <<'PY'
 from __future__ import annotations
-import hashlib
 import json
 from pathlib import Path
 import sys
 
-report_path, archive_path, output_path = map(Path, sys.argv[1:])
-report = json.loads(report_path.read_text(encoding="utf-8"))
-if report.get("candidate_id") != "N03_FINAL_UTILITY_V4":
-    raise SystemExit("verification candidate is not N03_FINAL_UTILITY_V4")
-if report.get("passed") is not True:
-    raise SystemExit("frozen equivalence gate did not pass")
-if report.get("case_count") != 179 or report.get("different_voxels") != 0:
-    raise SystemExit("release requires 179 cases and zero differing voxels")
+report_path, archive_path, output_path = map(Path, sys.argv[1:4])
+accept_recorded_difference = sys.argv[4].lower() == "true"
+root = Path(sys.argv[5])
+sys.path.insert(0, str(root))
 
-digest = hashlib.sha256()
-with archive_path.open("rb") as handle:
-    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-        digest.update(chunk)
-payload = {
-    "candidate_id": "N03_FINAL_UTILITY_V4",
-    "archive": archive_path.name,
-    "archive_sha256": digest.hexdigest(),
-    "archive_size_bytes": archive_path.stat().st_size,
-    "frozen_equivalence_report": report_path.name,
-    "frozen_equivalence_passed": True,
-    "case_count": 179,
-    "different_voxels": 0,
-}
+from verification.release_manifest import build_release_manifest
+
+report = json.loads(report_path.read_text(encoding="utf-8"))
+payload = build_release_manifest(
+    report,
+    archive_path,
+    accept_recorded_difference=accept_recorded_difference,
+)
+payload["frozen_equivalence_report"] = report_path.name
 output_path.parent.mkdir(parents=True, exist_ok=True)
 output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 print(json.dumps(payload, sort_keys=True))

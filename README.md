@@ -60,11 +60,16 @@ bash scripts/04_export_inference_assets.sh
 bash scripts/05_build_final_image.sh
 bash scripts/06_verify_final_image.sh /path/to/raw-input /path/to/frozen-reference.zip
 bash scripts/07_release_final_image.sh
+bash scripts/08_package_submission.sh /path/to/predictions
 ```
 
 Steps `06` and `07` fail closed unless two fresh 179-case runs are
 voxel-identical to the frozen external reference. The reference ZIP is never
-copied into the image.
+copied into the image. If an authorized release decision accepts a measured
+nonzero difference, run `07_release_final_image.sh
+--accept-recorded-difference`; this still requires all 179 cases to pass
+case-set, shape, affine, spacing, dtype, and label checks, and preserves the
+exact differing-case and voxel counts in the release manifest.
 
 `05_build_final_image.sh` selects rootless BuildKit by default. On the
 restricted challenge host, set `N03_IMAGE_BUILDER=kaniko` and provide
@@ -95,7 +100,9 @@ images. Retraining may vary numerically because of GPU kernels and stochastic
 optimization; it is therefore not claimed to regenerate byte-identical
 weights.
 
-The final image manifest is written only after external equivalence succeeds.
+The final image manifest is written only after external verification. Exact
+equivalence remains the default gate; an explicitly accepted recorded
+difference is labelled as such rather than reported as equivalence.
 The Docker archive and frozen prediction ZIP are excluded from Git because
 they contain private weights or challenge predictions.
 

@@ -125,6 +125,7 @@ def test_ordered_shell_workflow_is_present() -> None:
         "05_build_final_image.sh",
         "06_verify_final_image.sh",
         "07_release_final_image.sh",
+        "08_package_submission.sh",
     }
     scripts = root / "scripts"
     assert expected.issubset({path.name for path in scripts.glob("*.sh")})
@@ -138,6 +139,9 @@ def test_ordered_shell_workflow_is_present() -> None:
     ).read_text(encoding="utf-8")
     assert "verify_frozen_equivalence.py" in (
         scripts / "06_verify_final_image.sh"
+    ).read_text(encoding="utf-8")
+    assert "package_submission.py" in (
+        scripts / "08_package_submission.sh"
     ).read_text(encoding="utf-8")
 
 

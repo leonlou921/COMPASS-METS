@@ -106,3 +106,32 @@ def test_frozen_equivalence_reports_voxel_geometry_and_case_set_failures(
     rows = {row["case_id"]: row for row in report["cases"]}
     assert rows["case-a"]["array_equal"] is False
     assert rows["case-b"]["affine_equal"] is False
+
+
+def test_single_run_verification_records_difference_but_passes_structure(
+    tmp_path: Path,
+) -> None:
+    reference = tmp_path / "reference"
+    candidate = tmp_path / "candidate"
+    base = np.zeros((2, 2, 2), dtype=np.uint8)
+    changed = base.copy()
+    changed[0, 0, 0] = 3
+    _write_label(reference / "case-a.nii.gz", base)
+    _write_label(candidate / "case-a.nii.gz", changed)
+    reference_zip = tmp_path / "reference.zip"
+    _zip_flat(reference, reference_zip)
+
+    report = verify_frozen_equivalence(
+        reference_zip,
+        candidate,
+        None,
+        expected_cases=1,
+    )
+
+    assert report["verification_mode"] == "single_run"
+    assert report["passed"] is False
+    assert report["structural_passed"] is True
+    assert report["different_case_count"] == 1
+    assert report["different_voxels"] == 1
+    assert report["repeat_case_count"] is None
+    assert report["repeat_case_set_equal"] is None

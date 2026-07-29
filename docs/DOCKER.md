@@ -126,16 +126,34 @@ bash scripts/06_verify_final_image.sh \
   /path/to/external-frozen-N03_FINAL_UTILITY_V4.zip
 
 bash scripts/07_release_final_image.sh
+
+bash scripts/08_package_submission.sh \
+  /path/to/fresh-179-output \
+  artifacts/N03_FINAL_UTILITY_V4_submission.zip
 ```
 
 The frozen ZIP is an external oracle. It is neither copied into the Docker
-build context nor used during inference. Any nonzero voxel difference blocks
-release; there is no case-specific patching fallback.
+build context nor used during inference. Exact equivalence is the default
+release gate and there is no case-specific patching fallback. When the
+authorized release decision is to accept a fully measured nonzero difference,
+use:
+
+```bash
+bash scripts/07_release_final_image.sh --accept-recorded-difference
+```
+
+This explicit mode still requires all 179 outputs and exact case-set, shape,
+affine, spacing, dtype, and legal-label checks. It records
+`acceptance_mode=explicit_recorded_difference`, the differing-case count, and
+the differing-voxel count in the manifest; it never relabels the result as
+frozen equivalence.
 
 ## Challenge submission package
 
-Submit the Docker image through the challenge's current official mechanism.
-Use the public GitHub repository URL as the source-code link where requested.
-Do not upload training data, hidden-test labels, historical predictions, or
-credentials. Keep the local TAR backup until the challenge result and any
-artifact review are complete.
+`08_package_submission.sh` checks every output NIfTI, then writes a flat
+CRC-validated 179-entry ZIP plus a SHA256 manifest. Submit the Docker image
+through the challenge's current official mechanism and use that ZIP only on
+evaluation surfaces that request label files. Use the public GitHub repository
+URL as the source-code link where requested. Do not upload training data,
+hidden-test labels, historical predictions, or credentials. Keep the local
+TAR backup until the challenge result and any artifact review are complete.

@@ -61,3 +61,6 @@ work directory, not the submission output.
 
 The frozen prediction ZIP is not a runtime input. It is consumed only by
 `verification/verify_frozen_equivalence.py` after inference has finished.
+For a single independently generated output set, omit `--repeat-dir`; the
+report then records exact frozen-reference differences and all structural
+checks without claiming run-to-run repeatability.
