@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 from typing import Mapping
 
 import numpy as np
+
+from compass_mets.inference.input_contract import (
+    discover_cases,
+    stage_nnunet_inputs,
+)
 
 
 MODEL_SEQUENCE = ("XL", "M", "FT")
@@ -146,3 +154,76 @@ def validate_probability_directory(
         "channel_count": 4,
         "distinct_shapes": len(shapes),
     }
+
+
+DEFAULT_MODEL_SPECS = {
+    "XL": ModelInferenceSpec(
+        role="XL",
+        trainer="nnUNetTrainer",
+        plans="nnUNetResEncUNetXL30GBPlans",
+    ),
+    "M": ModelInferenceSpec(
+        role="M",
+        trainer="nnUNetTrainer",
+        plans="nnUNetResEncUNetMPlans",
+    ),
+    "FT": ModelInferenceSpec(
+        role="FT",
+        trainer="nnUNetTrainer_ResEncM_DiceCEFocalTverskyFT",
+        plans="nnUNetResEncUNetMPlans",
+    ),
+}
+
+
+def predict_from_input(
+    input_root: Path,
+    output_root: Path,
+    nnunet_results: Path,
+    work_root: Path,
+    executable: str = "nnUNetv2_predict",
+) -> dict[str, object]:
+    cases = discover_cases(input_root)
+    case_ids = {case.case_id for case in cases}
+    output_root = Path(output_root)
+    output_root.mkdir(parents=True, exist_ok=True)
+    if any(output_root.iterdir()):
+        raise ValueError(f"probability output must be empty: {output_root}")
+    Path(work_root).mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="compass-", dir=work_root) as temporary:
+        staging = Path(temporary) / "nnunet_input"
+        stage_nnunet_inputs(cases, staging)
+        roots = run_prediction_sources(
+            DEFAULT_MODEL_SPECS,
+            input_root=staging,
+            work_root=output_root,
+            nnunet_results=nnunet_results,
+            executable=executable,
+        )
+    audits = {
+        role: validate_probability_directory(roots[role], case_ids)
+        for role in MODEL_SEQUENCE
+    }
+    return {"case_count": len(cases), "sources": audits}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--nnunet-results", type=Path, required=True)
+    parser.add_argument("--work", type=Path, required=True)
+    parser.add_argument("--executable", default="nnUNetv2_predict")
+    args = parser.parse_args()
+    report = predict_from_input(
+        args.input,
+        args.output,
+        args.nnunet_results,
+        args.work,
+        executable=args.executable,
+    )
+    print(json.dumps(report, sort_keys=True), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

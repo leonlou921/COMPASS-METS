@@ -14,27 +14,34 @@ import numpy as np
 import pandas as pd
 from scipy import ndimage as ndi
 
-from component_gate import label_to_regions, propose_components
-from features import extract_case_features
-from portfolio_common import (
+from compass_mets.learned_gates.lcv1.component_gate import (
+    label_to_regions,
+    propose_components,
+)
+from compass_mets.learned_gates.lcv1.features import extract_case_features
+from compass_mets.postprocessing.portfolio.portfolio_common import (
     generate_union_proposals,
     masks_to_brats_segmentation,
     validate_probability_alignment,
 )
-from portfolio_variants import (
+from compass_mets.postprocessing.portfolio.portfolio_variants import (
     CHANNELS,
     VARIANTS,
     _FIXED_LCV2_CUTOFFS,
     apply_nonrouter_variant,
     reconstruct_anchor,
 )
-from train_models_v2 import predict_test_component_probability
-from train_models_v2 import _case_probability_map
-from v2_component_gate import (
+from compass_mets.learned_gates.lcv1.train_models_v2 import (
+    _case_probability_map,
+    predict_test_component_probability,
+)
+from compass_mets.learned_gates.lcv1.v2_component_gate import (
     LC_V2_STRUCTURED_FILTER,
     reconstruct_scored_candidate,
 )
-from v2_pipeline import proposal_scores_from_predictions
+from compass_mets.learned_gates.lcv1.v2_pipeline import (
+    proposal_scores_from_predictions,
+)
 
 from .utility_v4 import (
     RGV3_ET_CUTOFF,

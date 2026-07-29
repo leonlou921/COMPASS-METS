@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Generate the frozen XL-only BraTS MET postprocessing submission set.
+"""Generate the frozen XL-only BraTS MET postprocessing ablations.
 
 The thresholds and component rules are copied from the already evaluated
 ResEncM postprocessors. No threshold, volume, confidence, or boundary sweep is
@@ -9,12 +9,10 @@ using three-of-five independent XL fold probability sources.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import multiprocessing as mp
 import os
 import shutil
-import zipfile
 from pathlib import Path
 from typing import Mapping, Sequence
 
@@ -363,54 +361,11 @@ def _process_case(case_id: str) -> dict[str, int | str]:
     }
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def package_versions(out_root: Path, submission_root: Path, version_ids: Sequence[str], expected: int) -> None:
-    submission_root.mkdir(parents=True, exist_ok=True)
-    manifest: dict[str, object] = {"expected_cases": expected, "versions": {}}
-    for version_id in version_ids:
-        prediction_root = out_root / "candidates" / version_id / "predictions"
-        files = sorted(prediction_root.glob("*.nii.gz"))
-        if len(files) != expected:
-            raise RuntimeError(f"{version_id}: expected {expected} predictions, found {len(files)}")
-        zip_path = submission_root / f"Dataset501_BraTS2025MET_ResEncXL_{version_id}.zip"
-        temporary = zip_path.with_suffix(".zip.tmp")
-        with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-            for path in files:
-                archive.write(path, arcname=path.name)
-        os.replace(temporary, zip_path)
-        with zipfile.ZipFile(zip_path) as archive:
-            names = archive.namelist()
-            bad = archive.testzip()
-        if len(names) != expected or any("/" in name or not name.endswith(".nii.gz") for name in names):
-            raise RuntimeError(f"{version_id}: invalid flat ZIP structure")
-        if bad is not None:
-            raise RuntimeError(f"{version_id}: CRC failure at {bad}")
-        digest = _sha256(zip_path)
-        zip_path.with_suffix(zip_path.suffix + ".sha256").write_text(
-            f"{digest}  {zip_path.name}\n", encoding="utf-8"
-        )
-        manifest["versions"][version_id] = {
-            "prediction_count": len(files),
-            "zip": str(zip_path),
-            "zip_entries": len(names),
-            "sha256": digest,
-        }
-    (submission_root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ensemble-root", type=Path, required=True)
     parser.add_argument("--fold-root", type=Path, action="append", default=[])
     parser.add_argument("--out-root", type=Path, required=True)
-    parser.add_argument("--submission-root", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--expected", type=int, default=179)
     parser.add_argument("--resume", action="store_true")
@@ -470,8 +425,6 @@ def main() -> None:
         json.dumps({"processed_cases": len(case_ids), **rescue_totals}, indent=2) + "\n",
         encoding="utf-8",
     )
-    if len(case_ids) == args.expected:
-        package_versions(args.out_root, args.submission_root, version_ids, args.expected)
 
 
 if __name__ == "__main__":

@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 from scipy import ndimage
 
-from portfolio_common import (
+from compass_mets.postprocessing.portfolio.portfolio_common import (
     LocalProposal,
     assert_anchor_protected,
     enforce_hierarchy,
@@ -23,33 +21,22 @@ from portfolio_common import (
 )
 
 
-# The frozen fusion implementation lives one directory above this v3 package on
-# both the local workspace and the remote scripts tree.
-_PARENT_SCRIPT_ROOT = Path(__file__).resolve().parent.parent
-if str(_PARENT_SCRIPT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PARENT_SCRIPT_ROOT))
-
-from build_xl_fixed_postprocess import (  # noqa: E402
+from compass_mets.fusion.build_xl_fixed_postprocess import (
     RC_STRICT,
     TC_BOUNDARY,
     apply_rc_gate,
     segmentation_to_masks,
 )
-from mft_regionwise_pipeline import (  # noqa: E402
+from compass_mets.fusion.mft_regionwise_pipeline import (
     CHANNELS,
     DEFAULT_GATES,
     apply_tc_boundary_completion,
     component_conf_masks,
     masks_to_segmentation,
 )
-from xlm_fixed_fusions import (  # noqa: E402
+from compass_mets.fusion.xlm_fixed_fusions import (
     build_candidate_segmentations,
     fuse_logits_many,
-)
-from case_router import (  # noqa: E402
-    ROUTER_PAIRS,
-    choose_complete_case,
-    unanimous_candidate_vote,
 )
 
 
@@ -747,20 +734,3 @@ def apply_nonrouter_variant(
     output = enforce_hierarchy(output)
     assert_anchor_protected(anchor, output)
     return output, audit
-
-
-def apply_router_variant(
-    variant_id: str,
-    anchor: np.ndarray,
-    candidate: np.ndarray,
-    models: list[object],
-    row: pd.DataFrame,
-) -> np.ndarray:
-    """Dispatch a registered complete-case router without region mixing."""
-    if variant_id not in ROUTER_PAIRS:
-        raise KeyError(f"unknown router variant: {variant_id}")
-    return choose_complete_case(
-        anchor,
-        candidate,
-        unanimous_candidate_vote(models, row),
-    )
