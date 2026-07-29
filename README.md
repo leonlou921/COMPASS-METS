@@ -66,6 +66,12 @@ Steps `06` and `07` fail closed unless two fresh 179-case runs are
 voxel-identical to the frozen external reference. The reference ZIP is never
 copied into the image.
 
+`05_build_final_image.sh` selects rootless BuildKit by default. On the
+restricted challenge host, set `N03_IMAGE_BUILDER=kaniko` and provide
+`KANIKO_ROOTFS_TAR`, `REGISTRY_BINARY`, `REGISTRY_CONFIG`, `CRANE`,
+`BASE_IMAGE`, and `IMAGE_REF`; this reproduces the local Registry + Kaniko
+workflow without hard-coding any private machine path.
+
 Run the frozen container after preparing the private assets:
 
 ```bash

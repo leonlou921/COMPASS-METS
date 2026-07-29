@@ -6,7 +6,8 @@ PYTHON="${PYTHON:-python}"
 
 if [[ "${1:-}" == "--help" ]]; then
   echo "usage: $0"
-  echo "builds the offline N03_FINAL_UTILITY_V4 Docker archive with rootless BuildKit"
+  echo "builds the offline N03_FINAL_UTILITY_V4 Docker archive"
+  echo "set N03_IMAGE_BUILDER=buildkit or kaniko (default: auto)"
   exit 0
 fi
 [[ "$#" -eq 0 ]] || { echo "unexpected arguments" >&2; exit 2; }
@@ -23,4 +24,24 @@ if find "${ROOT}/assets" -type f \
 fi
 "${PYTHON}" "${ROOT}/scripts/verify_release.py" "${ROOT}"
 
-bash "${ROOT}/scripts/build_docker_archive.sh" "${ROOT}"
+builder="${N03_IMAGE_BUILDER:-auto}"
+if [[ "${builder}" == "auto" ]]; then
+  if [[ -n "${KANIKO_ROOTFS_TAR:-}" ]]; then
+    builder="kaniko"
+  else
+    builder="buildkit"
+  fi
+fi
+
+case "${builder}" in
+  buildkit)
+    bash "${ROOT}/scripts/build_docker_archive.sh" "${ROOT}"
+    ;;
+  kaniko)
+    bash "${ROOT}/scripts/build_docker_archive_kaniko.sh" "${ROOT}"
+    ;;
+  *)
+    echo "unsupported N03_IMAGE_BUILDER: ${builder}" >&2
+    exit 2
+    ;;
+esac

@@ -62,3 +62,29 @@ def test_build_script_exports_a_docker_load_compatible_archive() -> None:
     assert "type=docker,name=" in script
     assert ".docker.tar" in script
     assert "sha256sum" in script
+
+
+def test_kaniko_build_script_matches_the_restricted_host_workflow() -> None:
+    script = (
+        ROOT / "scripts" / "build_docker_archive_kaniko.sh"
+    ).read_text(encoding="utf-8")
+    assert "KANIKO_ROOTFS_TAR" in script
+    assert "REGISTRY_BINARY" in script
+    assert "REGISTRY_CONFIG" in script
+    assert "CRANE" in script
+    assert 'chroot "${KANIKO_ROOT}" /kaniko/executor' in script
+    assert "--force" in script
+    assert "--format=legacy" in script
+    assert "crane validate" not in script
+    assert '"${CRANE}" validate --insecure --remote "${IMAGE_REF}"' in script
+    assert "sha256sum" in script
+    private_prefix = "/data/" + "coding/challenge"
+    assert private_prefix not in script
+
+
+def test_ordered_image_build_can_select_kaniko() -> None:
+    script = (ROOT / "scripts" / "05_build_final_image.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "N03_IMAGE_BUILDER" in script
+    assert "build_docker_archive_kaniko.sh" in script

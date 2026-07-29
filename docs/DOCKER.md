@@ -64,7 +64,24 @@ On a rootless BuildKit host:
 bash scripts/build_docker_archive.sh
 ```
 
-The latter exports a Docker-load-compatible TAR and adjacent SHA256 file.
+On a restricted host where user namespaces or mounts are unavailable, use the
+same local-Registry + Kaniko flow used for the qualified build:
+
+```bash
+export N03_IMAGE_BUILDER=kaniko
+export KANIKO_ROOTFS_TAR=/path/to/kaniko-debug-rootfs.tar
+export REGISTRY_BINARY=/path/to/registry
+export REGISTRY_CONFIG=/path/to/registry-config.yml
+export CRANE=/path/to/crane
+export BASE_IMAGE='127.0.0.1:5000/n03/pytorch-base@sha256:<pinned-digest>'
+export IMAGE_REF='127.0.0.1:5000/n03/final-utility-v4:release'
+bash scripts/05_build_final_image.sh
+```
+
+Both builders export a Docker-load-compatible TAR and adjacent SHA256 file.
+The Kaniko path additionally records the Registry image digest in
+`artifacts/image_reference.json`. The tool paths and local Registry storage
+remain host inputs; they are not vendored into this source repository.
 
 ## Validate before submission
 
