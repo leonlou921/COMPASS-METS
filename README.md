@@ -5,9 +5,7 @@ contains the complete data-preparation, training, out-of-fold learned-gate,
 three-source inference, XF12 fusion, N03 parent-supported, and final
 `N03_FINAL_UTILITY_V4` postprocessing code.
 
-The repository intentionally contains source code only. Challenge images,
-labels, checkpoints, learned model files, probability maps, and predictions
-must remain outside Git.
+The repository contains source code only. Checkpoints, learned model files will be available soon!
 
 ## Final method
 
